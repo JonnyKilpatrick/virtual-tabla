@@ -4,6 +4,10 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
 
+/**
+ * Class to recognise gestures in the Leap motion sensor for each finger 
+ */
+ 
 public class GestureRecogniser
 {
   /**************************************************************************************************/
@@ -43,6 +47,19 @@ public class GestureRecogniser
   //
   /**************************************************************************************************/
   
+  /**
+   * Constructor for the class
+   * @param velocityThreshold flaot the minimum velcity in the negative Y direction to be considered 
+   * a gesture
+   * @param timeThreshold float the minimum number of frames a gesture must be at the required 
+   * velocity to be considered a gesture
+   * @param lengthThreshold float the mimimum length in Y that the gesture must move
+   * @param restTimeBetweenHits long the number of frames to wait before a new gesture can be 
+   * triggered in the same region
+   * @param distanceToPauseHits float the distance in which to stop any other gestures being 
+   * recognised in the set restTimeBetweenHits 
+   */
+   
   public GestureRecogniser(float velocityThreshold, float timeThreshold, float lengthThreshold, 
     long restTimeBetweenHits, float distanceToPauseHits)
   {
@@ -67,7 +84,14 @@ public class GestureRecogniser
   //
   /**************************************************************************************************/
   
-  public boolean checkForGestures(Finger finger)
+  /**
+   * Checks whether a valid gesture has occured in a given finger from the leap software, or track for 
+   * future gestures
+   * @param finger Finger the finger to check whether a gesture has occured / track for future gestures 
+   * @return Gesture the gesture found in that finger, if no valid gesture returns null
+   */
+   
+  public Gesture checkForGestures(Finger finger)
   {
     // Get the finger id, velocity, position and velocity
     int id = finger.id();
@@ -86,9 +110,18 @@ public class GestureRecogniser
       {
         // Update gesture
         gesture.addNoFramesSeen();
+        
+        // If current velocity is faster than previous fastest, update fastest
+        if (velocity < gesture.getFastestVelocity())
+        {
+          gesture.setFastestVelocity(velocity);
+        }
+        
       }
       
-      // Else if valid gesture in time and movement length play sound
+      // Else finger has slowed down, if valid gesture in time active and distance moved, and 
+      // the position is not currently paused because another sound has just been played here,
+      // play the sound
       
       else if (gesture.framesVisable() >= timeThreshold && 
                gesture.getLength(position) >= lengthThreshold && 
@@ -97,11 +130,14 @@ public class GestureRecogniser
         // Add rest period for this position
         pausedPositions.put(position, finger.frame().timestamp() + restTimeBetweenHits);
         
+        // Update end position
+        gesture.setEndPosition(position);
+        
         // Remove gesture as sound will be triggered and gesture is over
         gestures.remove(id);
         
-        // Return true to signify that sound should be played
-        return true;
+        // Return the gesture to signify that sound should be played
+        return gesture;
       }
       
       // Else gesture is not valid so remove from map
@@ -117,11 +153,15 @@ public class GestureRecogniser
     
     else if (velocity <= velocityThreshold)
     {
-      // Create new gesture
-      gestures.put(id, new Gesture(id, 0, position));
+      // Create new gesture and initialise fastest velocity
+      Gesture gesture = new Gesture(id, 0, position);
+      gestures.put(id, gesture);
+      gesture.setFastestVelocity(velocity);
+
     }
     
-    return false;
+    // Return null as no sound should be triggered if we've reached this point
+    return null;
     
   }
   
@@ -133,6 +173,15 @@ public class GestureRecogniser
   //
   /**************************************************************************************************/
   
+  /**
+   * Cleans up the maps stored, if a position has been paused this method checks whether to start 
+   * allowing gestures here, also clears up the list of current gestures removing those that have been 
+   * lost. 
+   * Must be called after every call to checkForGestures, but not called automatically to increase 
+   * performane (play the sound first before cleaning up)
+   * @param frame Frame the current frame
+   */
+   
   public void cleanUpFingerMap(Frame frame)
   { 
     // Get the finger list in the frame
@@ -189,6 +238,12 @@ public class GestureRecogniser
   //
   /**************************************************************************************************/
   
+  /**
+   * Checks whether a current position is paused
+   * @param position the position to check
+   * @return boolean whether the position is currently paused. 
+   */
+   
   private boolean positionPaused(Vector position)
   {
     // For each position in the current paused positions map, if the given position is near enough, 
