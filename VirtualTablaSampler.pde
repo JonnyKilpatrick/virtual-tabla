@@ -19,7 +19,7 @@ final long REST_PERIOD = 100000;
 final float DISTANCE_TO_PAUSE_HITS = 150;//100000;
 
 // For Midi conversion
-final float VELOCITY_MAXIMUM = -300;
+final float VELOCITY_MAXIMUM = -2000;
 
 /**************************************************************************************************/
 //
@@ -38,7 +38,7 @@ Frame frame; // The most recent frame
 /**************************************************************************************************/
 //
 /* Class variables
- //
+//
 /**************************************************************************************************/
 
 // Leap Motion interaction space
@@ -155,14 +155,21 @@ void draw()
       // Work out if sound has been triggered
       Gesture gesture = gestureRecogniser.checkForGestures(finger);
 
-      // If sound should be triggered play sound
+      // If gesture was detected, check to see if a note should be played
+      // by converting to MIDI message
+      
       if (gesture != null)
       { 
-        MidiMessage midi = mapToScreen.convertToMidiMessage(gesture); 
+        MidiMessage midi = mapToScreen.convertToMidiMessage(gesture);
+       
+        // If a Midi message was returned, pause gesture recognition in that position and play the sound 
         if (midi !=null)
         {
-          audioPlayer.playSample();
-          println("Velocity: "+midi.getVelocity()+" Note:"+midi.getNote()+" Drum: "+midi.getDrum());
+          // Pause recognition for set no of frames in that position
+          gestureRecogniser.pausePosition(finger);
+          
+          // Play sound
+          audioPlayer.playSample(midi);
         }
       }
 

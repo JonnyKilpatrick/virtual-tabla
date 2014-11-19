@@ -40,6 +40,9 @@ public class GestureRecogniser
   // Used to pause new hits being triggered in the same position just after
   private Map<Vector, Long> pausedPositions;
   
+  // The last position of a valid gesture, used for pausing the last if it resulted in triggering a sound
+  private Vector lastGesturePosition;
+  
   
   /**************************************************************************************************/
   //
@@ -96,7 +99,7 @@ public class GestureRecogniser
     // Get the finger id, velocity, position and velocity
     int id = finger.id();
     float velocity = finger.tipVelocity().getY();
-    Vector position = finger.tipPosition();
+    lastGesturePosition = finger.tipPosition();
     
     // if this finger already has a current gesture
     
@@ -112,7 +115,7 @@ public class GestureRecogniser
         gesture.addNoFramesSeen();
         
         // If current velocity is faster than previous fastest, update fastest
-        if (velocity < gesture.getFastestVelocity())
+        if ((velocity * -1) > gesture.getFastestVelocity())
         {
           gesture.setFastestVelocity(velocity);
         }
@@ -120,23 +123,19 @@ public class GestureRecogniser
       }
       
       // Else finger has slowed down, if valid gesture in time active and distance moved, and 
-      // the position is not currently paused because another sound has just been played here,
-      // play the sound
+      // the position is not currently paused because another gesture has just been triggered here,
+      // trigger the gesture
       
       else if (gesture.framesVisable() >= timeThreshold && 
-               gesture.getLength(position) >= lengthThreshold && 
-               positionPaused(position) == false)
-      {
-        // Add rest period for this position
-        pausedPositions.put(position, finger.frame().timestamp() + restTimeBetweenHits);
-        
+               gesture.getLength(lastGesturePosition) >= lengthThreshold && 
+               positionPaused(lastGesturePosition) == false)
+      { 
         // Update end position
-        gesture.setEndPosition(position);
+        gesture.setEndPosition(lastGesturePosition);
         
         // Remove gesture as sound will be triggered and gesture is over
         gestures.remove(id);
-        
-        // Return the gesture to signify that sound should be played
+
         return gesture;
       }
       
@@ -154,7 +153,7 @@ public class GestureRecogniser
     else if (velocity <= velocityThreshold)
     {
       // Create new gesture and initialise fastest velocity
-      Gesture gesture = new Gesture(id, 0, position);
+      Gesture gesture = new Gesture(id, 0, lastGesturePosition);
       gestures.put(id, gesture);
       gesture.setFastestVelocity(velocity);
 
@@ -164,6 +163,26 @@ public class GestureRecogniser
     return null;
     
   }
+  
+  
+  /**************************************************************************************************/
+  //
+  /* Pause gesture recognition
+  //
+  /**************************************************************************************************/
+  
+  /**
+   * Pauses a position of a gesture for the set number of frames, in the set distance so no more 
+  // gestures will be triggered there
+   * @param frame Frame the current frame
+   */
+  
+  public void pausePosition(Finger finger)
+  {
+    // Add rest period for this position
+    pausedPositions.put(lastGesturePosition, finger.frame().timestamp() + restTimeBetweenHits);
+  }
+  
   
   
   /**************************************************************************************************/

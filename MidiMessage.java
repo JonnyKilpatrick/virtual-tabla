@@ -13,8 +13,8 @@ public class MidiMessage
   //
   /**************************************************************************************************/
   
-  private int velocity;   // Velocity of the message
-  private int note;       // The note to play 
+  private byte velocity;   // Velocity of the message
+  private byte note;       // The note to play 
   private TablaDrum drum; // Which drum: left/right/neither
   
   
@@ -42,7 +42,7 @@ public class MidiMessage
     }
     else
     {
-      this.velocity = velocity;
+      this.velocity = (byte) velocity;
     }
     
     
@@ -56,7 +56,7 @@ public class MidiMessage
     }
     else
     {
-      this.note = note;
+      this.note = (byte) note;
     }
     
     this.drum = drum;
@@ -76,7 +76,7 @@ public class MidiMessage
    * @return int the veloicity for the note between 0-127
    */
    
-  public int getVelocity()
+  public byte getVelocity()
   {
     return velocity;
   }
@@ -87,7 +87,7 @@ public class MidiMessage
    * @return int the note between 0-127
    */
    
-  public int getNote()
+  public byte getNote()
   {
     return note;
   }

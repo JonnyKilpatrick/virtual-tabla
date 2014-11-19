@@ -1,4 +1,4 @@
 public interface IAudioPlayer 
 {
-  public void playSample();
+  public void playSample(MidiMessage midi);
 }
