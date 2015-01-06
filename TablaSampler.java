@@ -4,6 +4,7 @@ import com.jsyn.data.*;
 import com.jsyn.unitgen.*;
 import java.io.File;
 import com.jsyn.util.*;
+import java.io.FileNotFoundException;
 
 /**
  * Class for a TablaSampler, plays tabla samples given MidiMessages
@@ -57,7 +58,7 @@ public class TablaSampler implements IAudioPlayer
    * Class constructor, takes the parent PApplet, sets up the JSyn unit generators to play tabla samples
    * @param parent PApplet the PApplet processing parent
    */
-  public TablaSampler(PApplet parent)
+  public TablaSampler(PApplet parent) throws FileNotFoundException
   {
     // Initialise the PApplet parent
     this.parent = parent;
@@ -165,8 +166,8 @@ public class TablaSampler implements IAudioPlayer
     // Handle file not found
     catch (Exception ex)
     {
-      System.out.println("Unable to load samples: ");
       ex.printStackTrace();
+      throw new FileNotFoundException("Error: Unable to load drum samples");
     }
   }
   
@@ -181,9 +182,8 @@ public class TablaSampler implements IAudioPlayer
    * Class constructor, takes the parent PApplet, sets up the JSyn unit generators to play tabla samples
    * @param midiMessage MidiMessage the message containing velocity, note and right/left drum 
    */
-  public void playSample(MidiMessage midi)  
+  public void playSample(MidiMessage midi)
   {
-    
     // If left drum, trigger the left drum sampler
     if (midi.getDrum() == TablaDrum.LEFT)
     {  
@@ -212,56 +212,65 @@ public class TablaSampler implements IAudioPlayer
     
     byte note = midi.getNote();
     
-    // Center
-    if (note<55)
+    try
     {
-      // Set the amplitude
-      lowCenter.amplitude.set((double) midi.getVelocity() /127);
-      
-      if (note <35)
-      {
-        lowCenter.dataQueue.clear();
-        lowCenter.dataQueue.queue(lowCenter1, 0, lowCenter1.getNumFrames());
-      }
-      else
-      {
-        lowCenter.dataQueue.clear();
-        lowCenter.dataQueue.queue(lowCenter2, 0, lowCenter2.getNumFrames());
-      }
-    }
     
-    // Mid
-    else if (note < 110)
-    {
-      // Set the amplitude
-      lowMid.amplitude.set((double) midi.getVelocity() /127);
-      
-      if (note <85)
+      // Center
+      if (note<55)
       {
-        lowMid.dataQueue.clear();
-        lowMid.dataQueue.queue(lowMid1, 0, lowMid1.getNumFrames());
+        // Set the amplitude
+        lowCenter.amplitude.set((double) midi.getVelocity() /127);
+        
+        if (note <35)
+        {
+          lowCenter.dataQueue.clear();
+          lowCenter.dataQueue.queue(lowCenter1, 0, lowCenter1.getNumFrames());
+        }
+        else
+        {
+          lowCenter.dataQueue.clear();
+          lowCenter.dataQueue.queue(lowCenter2, 0, lowCenter2.getNumFrames());
+        }
+      }
+      
+      // Mid
+      else if (note < 110)
+      {
+        // Set the amplitude
+        lowMid.amplitude.set((double) midi.getVelocity() /127);
+        
+        if (note <85)
+        {
+          lowMid.dataQueue.clear();
+          lowMid.dataQueue.queue(lowMid1, 0, lowMid1.getNumFrames());
+        }
+        else
+        {
+          lowMid.dataQueue.clear();
+          lowMid.dataQueue.queue(lowMid2, 0, lowMid2.getNumFrames());
+        }
       }
       else
       {
-        lowMid.dataQueue.clear();
-        lowMid.dataQueue.queue(lowMid2, 0, lowMid2.getNumFrames());
+        // Set the amplitude
+        lowRim.amplitude.set((double) midi.getVelocity() /127);
+        
+        if (note <120)
+        {
+          lowRim.dataQueue.clear();
+          lowRim.dataQueue.queue(lowRim1, 0, lowRim1.getNumFrames());
+        }
+        else
+        {
+          lowRim.dataQueue.clear();
+          lowRim.dataQueue.queue(lowRim2, 0, lowRim2.getNumFrames());
+        }
       }
     }
-    else
+    catch(Exception ex)
     {
-      // Set the amplitude
-      lowRim.amplitude.set((double) midi.getVelocity() /127);
-      
-      if (note <120)
-      {
-        lowRim.dataQueue.clear();
-        lowRim.dataQueue.queue(lowRim1, 0, lowRim1.getNumFrames());
-      }
-      else
-      {
-        lowRim.dataQueue.clear();
-        lowRim.dataQueue.queue(lowRim2, 0, lowRim2.getNumFrames());
-      }
+      ex.printStackTrace();
+      throw new ArithmeticException("Error: Failed to convert Midi number to amplitude");
     }
   }
   
@@ -276,56 +285,65 @@ public class TablaSampler implements IAudioPlayer
     
     byte note = midi.getNote();
     
-    // Center
-    if (note<55)
+    try
     {
-      // Set the amplitude
-      hiCenter.amplitude.set((double) midi.getVelocity() /127);
       
-      if (note <35)
+      // Center
+      if (note<55)
       {
-        hiCenter.dataQueue.clear();
-        hiCenter.dataQueue.queue(hiCenter1, 0, hiCenter1.getNumFrames());
+        // Set the amplitude
+        hiCenter.amplitude.set((double) midi.getVelocity() /127);
+        
+        if (note <35)
+        {
+          hiCenter.dataQueue.clear();
+          hiCenter.dataQueue.queue(hiCenter1, 0, hiCenter1.getNumFrames());
+        }
+        else
+        {
+          hiCenter.dataQueue.clear();
+          hiCenter.dataQueue.queue(hiCenter2, 0, hiCenter2.getNumFrames());
+        }
+      }
+      
+      // Mid
+      else if (note < 110)
+      {
+        // Set the amplitude
+        hiMid.amplitude.set((double) midi.getVelocity() /127);
+        
+        if (note <85)
+        {
+          hiMid.dataQueue.clear();
+          hiMid.dataQueue.queue(hiMid1, 0, hiMid1.getNumFrames());
+        }
+        else
+        {
+          hiMid.dataQueue.clear();
+          hiMid.dataQueue.queue(hiMid2, 0, hiMid2.getNumFrames());
+        }
       }
       else
       {
-        hiCenter.dataQueue.clear();
-        hiCenter.dataQueue.queue(hiCenter2, 0, hiCenter2.getNumFrames());
+        // Set the amplitude
+        hiRim.amplitude.set((double) midi.getVelocity() /127);
+        
+        if (note <120)
+        {
+          hiRim.dataQueue.clear();
+          hiRim.dataQueue.queue(hiRim1, 0, hiRim1.getNumFrames());
+        }
+        else
+        {
+          hiRim.dataQueue.clear();
+          hiRim.dataQueue.queue(hiRim2, 0, hiRim2.getNumFrames());
+        }
       }
     }
-    
-    // Mid
-    else if (note < 110)
+    catch(Exception ex)
     {
-      // Set the amplitude
-      hiMid.amplitude.set((double) midi.getVelocity() /127);
-      
-      if (note <85)
-      {
-        hiMid.dataQueue.clear();
-        hiMid.dataQueue.queue(hiMid1, 0, hiMid1.getNumFrames());
-      }
-      else
-      {
-        hiMid.dataQueue.clear();
-        hiMid.dataQueue.queue(hiMid2, 0, hiMid2.getNumFrames());
-      }
-    }
-    else
-    {
-      // Set the amplitude
-      hiRim.amplitude.set((double) midi.getVelocity() /127);
-      
-      if (note <120)
-      {
-        hiRim.dataQueue.clear();
-        hiRim.dataQueue.queue(hiRim1, 0, hiRim1.getNumFrames());
-      }
-      else
-      {
-        hiRim.dataQueue.clear();
-        hiRim.dataQueue.queue(hiRim2, 0, hiRim2.getNumFrames());
-      }
+      ex.printStackTrace();
+      throw new ArithmeticException("Error: Failed to convert Midi number to amplitude");
     }
   }
   

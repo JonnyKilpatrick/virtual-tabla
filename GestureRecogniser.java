@@ -58,7 +58,7 @@ public class GestureRecogniser
    * velocity to be considered a gesture
    * @param lengthThreshold float the mimimum length in Y that the gesture must move
    * @param restTimeBetweenHits long the number of frames to wait before a new gesture can be 
-   * triggered in the same region
+   * triggered in the same region - in microseconds
    * @param distanceToPauseHits float the distance in which to stop any other gestures being 
    * recognised in the set restTimeBetweenHits 
    */
@@ -94,71 +94,78 @@ public class GestureRecogniser
    * @return Gesture the gesture found in that finger, if no valid gesture returns null
    */
    
-  public Gesture checkForGestures(Finger finger)
+  public Gesture checkForGestures(Finger finger) throws Exception
   {
-    // Get the finger id, velocity, position and velocity
-    int id = finger.id();
-    float velocity = finger.tipVelocity().getY();
-    lastGesturePosition = finger.tipPosition();
-    
-    // if this finger already has a current gesture
-    
-    if (gestures.containsKey(id))
+    try
     {
-      // If current velocity is greater than the threshold, update the gesture object
+      // Get the finger id, velocity, position and velocity
+      int id = finger.id();
+      float velocity = finger.tipVelocity().getY();
+      lastGesturePosition = finger.tipPosition();
       
-      Gesture gesture = gestures.get(id);
+      // if this finger already has a current gesture
       
-      if(velocity <= velocityThreshold)
+      if (gestures.containsKey(id))
       {
-        // Update gesture
-        gesture.addNoFramesSeen();
+        // If current velocity is still greater than the threshold, update the gesture object
         
-        // If current velocity is faster than previous fastest, update fastest
-        if ((velocity * -1) > gesture.getFastestVelocity())
+        Gesture gesture = gestures.get(id);
+        
+        if(velocity <= velocityThreshold)
         {
-          gesture.setFastestVelocity(velocity);
+          // Update gesture
+          gesture.addNoFramesSeen();
+          
+          // If current velocity is faster than previous fastest, update fastest
+          if ((velocity * -1) > gesture.getFastestVelocity())
+          {
+            gesture.setFastestVelocity(velocity);
+          }
+          
         }
         
-      }
-      
-      // Else finger has slowed down, if valid gesture in time active and distance moved, and 
-      // the position is not currently paused because another gesture has just been triggered here,
-      // trigger the gesture
-      
-      else if (gesture.framesVisable() >= timeThreshold && 
-               gesture.getLength(lastGesturePosition) >= lengthThreshold && 
-               positionPaused(lastGesturePosition) == false)
-      { 
-        // Update end position
-        gesture.setEndPosition(lastGesturePosition);
+        // Else finger has slowed down, if valid gesture in time active and distance moved, and 
+        // the position is not currently paused because another gesture has just been triggered here,
+        // trigger the gesture
         
-        // Remove gesture as sound will be triggered and gesture is over
-        gestures.remove(id);
-
-        return gesture;
+        else if (gesture.framesVisable() >= timeThreshold && 
+                 gesture.getLength(lastGesturePosition) >= lengthThreshold && 
+                 positionPaused(lastGesturePosition) == false)
+        { 
+          // Update end position
+          gesture.setEndPosition(lastGesturePosition);
+          
+          // Remove gesture as sound will be triggered and gesture is over
+          gestures.remove(id);
+  
+          return gesture;
+        }
+        
+        // Else gesture is not valid so remove from map
+        
+        else
+        {
+          gestures.remove(id);
+        }      
       }
+    
+      // Else the finger is not part of a current gesture, so if velocity is greater than threshold, create new gesture
       
-      // Else gesture is not valid so remove from map
-      
-      else
+      else if (velocity <= velocityThreshold)
       {
-        gestures.remove(id);
+        // Create new gesture and initialise fastest velocity
+        Gesture gesture = new Gesture(id, 0, lastGesturePosition);
+        gestures.put(id, gesture);
+        gesture.setFastestVelocity(velocity);
       }
       
     }
-    
-    // Else the finger is not part of a current gesture, so if velocity is greater than threshold, create new gesture
-    
-    else if (velocity <= velocityThreshold)
+    catch(Exception ex)
     {
-      // Create new gesture and initialise fastest velocity
-      Gesture gesture = new Gesture(id, 0, lastGesturePosition);
-      gestures.put(id, gesture);
-      gesture.setFastestVelocity(velocity);
-
+      ex.printStackTrace();
+      throw new Exception("Error: Failed to check for drum hit gestures");
     }
-    
+      
     // Return null as no sound should be triggered if we've reached this point
     return null;
     
@@ -177,10 +184,19 @@ public class GestureRecogniser
    * @param frame Frame the current frame
    */
   
-  public void pausePosition(Finger finger)
+  public void pausePosition(Finger finger) throws Exception
   {
     // Add rest period for this position
-    pausedPositions.put(lastGesturePosition, finger.frame().timestamp() + restTimeBetweenHits);
+    
+    try
+    {
+      pausedPositions.put(lastGesturePosition, finger.frame().timestamp() + restTimeBetweenHits);
+    }
+    catch(Exception ex)
+    {
+      ex.printStackTrace();
+      throw new Exception("Error: Failed to pause the position of the latest drum hit");
+    }
   }
   
   
@@ -201,52 +217,60 @@ public class GestureRecogniser
    * @param frame Frame the current frame
    */
    
-  public void cleanUpFingerMap(Frame frame)
+  public void cleanUpFingerMap(Frame frame) throws Exception
   { 
-    // Get the finger list in the frame
-    FingerList fingerList = frame.fingers();
-    
-    // Get the smallest finger id that is present, as we know we can delete all gestures invloving 
-    // fingers with smaller ids
-    
-    int smallestId = fingerList.get(0).id();
-    int currentId = 0;
-    
-    for(int i=0; i<fingerList.count(); i++)
+    try
     {
-      currentId = fingerList.get(i).id();
-      if (currentId < smallestId)
-      {
-        smallestId = currentId;
-      }
-    }
-    
-    // Any gestures below the smallest id can be removed
-    Iterator<Map.Entry<Integer, Gesture>> iterator = gestures.entrySet().iterator();
-    while(iterator.hasNext())
-    {
-      // Remove from map if finger no longer present
-      Map.Entry<Integer, Gesture> entry = iterator.next();
+      // Get the finger list in the frame
+      FingerList fingerList = frame.fingers();
       
-      if(entry.getKey() < smallestId)
+      // Get the smallest finger id that is present, as we know we can delete all gestures invloving 
+      // fingers with smaller ids
+      
+      int smallestId = fingerList.get(0).id();
+      int currentId = 0;
+      
+      for(int i=0; i<fingerList.count(); i++)
       {
-        iterator.remove();
+        currentId = fingerList.get(i).id();
+        if (currentId < smallestId)
+        {
+          smallestId = currentId;
+        }
+      }
+      
+      // Any gestures below the smallest id can be removed
+      Iterator<Map.Entry<Integer, Gesture>> iterator = gestures.entrySet().iterator();
+      while(iterator.hasNext())
+      {
+        // Remove from map if finger no longer present
+        Map.Entry<Integer, Gesture> entry = iterator.next();
+        
+        if(entry.getKey() < smallestId)
+        {
+          iterator.remove();
+        }
+      }
+      
+      // Now clean up the map of currently paused positions
+      // For each position in the map, if it's timestamp + the set rest period is greater than the current timestamp,
+      // remove the position from the map
+      
+      Iterator<Map.Entry<Vector, Long>> positionIterator = pausedPositions.entrySet().iterator();
+  
+      while(positionIterator.hasNext())
+      {
+        Map.Entry<Vector, Long> entry = positionIterator.next();
+        if(entry.getValue() < frame.timestamp())
+        {
+          positionIterator.remove(); 
+        }
       }
     }
-    
-    // Now clean up the map of currently paused positions
-    // For each position in the map, if it's timestamp + the set rest period is greater than the current timestamp,
-    // remove the position from the map
-    
-    Iterator<Map.Entry<Vector, Long>> positionIterator = pausedPositions.entrySet().iterator();
-
-    while(positionIterator.hasNext())
+    catch(Exception ex)
     {
-      Map.Entry<Vector, Long> entry = positionIterator.next();
-      if(entry.getValue() < frame.timestamp())
-      {
-        positionIterator.remove(); 
-      }
+      ex.printStackTrace();
+      throw new Exception("Error: Failed to clean up list of current gestures and pauses");
     }
   }
   
@@ -265,24 +289,30 @@ public class GestureRecogniser
    
   private boolean positionPaused(Vector position)
   {
-    // For each position in the current paused positions map, if the given position is near enough, 
-    // return false, else continue
-    for(Vector p : pausedPositions.keySet())
+    try
     {
-      float xLength = position.getX() - p.getX();
-      float yLength = position.getY() - p.getY(); 
-      float distance = (float) Math.sqrt((xLength * xLength) + (yLength * yLength));
-      
-      if(distance < distanceToPauseHits)
+      // For each position in the current paused positions map, if the given position is near enough, 
+      // return false, else continue
+      for(Vector p : pausedPositions.keySet())
       {
-        return true;
+        float xLength = position.getX() - p.getX();
+        float yLength = position.getY() - p.getY(); 
+        float distance = (float) Math.sqrt((xLength * xLength) + (yLength * yLength));
+        
+        if(distance < distanceToPauseHits)
+        {
+          return true;
+        }
       }
     }
+    catch(Exception ex)
+    {
+      ex.printStackTrace();
+      throw new ArithmeticException("Error: Failed to check whether finger position was paused");
+    }
+    
     // Else return false
     return false;
   }
-  
-  
-  
   
 }

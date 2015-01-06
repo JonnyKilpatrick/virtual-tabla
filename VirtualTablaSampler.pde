@@ -1,10 +1,9 @@
 import com.leapmotion.leap.*;
-import beads.*;
 
 /**************************************************************************************************/
 //
 /* Constants
- //
+//
 /**************************************************************************************************/
 
 // Size of finger circles
@@ -15,8 +14,8 @@ final float ELLIPSE_MAX = 30;
 final float VELOCITY_THRESHOLD = -150;
 final float TIME_THRESHOLD = 0;
 final float LENGTH_THRESHOLD = 0;
-final long REST_PERIOD = 100000;
-final float DISTANCE_TO_PAUSE_HITS = 150;//100000;
+final long REST_PERIOD = 100000;          // microseconds
+final float DISTANCE_TO_PAUSE_HITS = 150;
 
 // For Midi conversion
 final float VELOCITY_MAXIMUM = -2000;
@@ -24,15 +23,15 @@ final float VELOCITY_MAXIMUM = -2000;
 /**************************************************************************************************/
 //
 /* Instance variables
- //
+//
 /**************************************************************************************************/
 
-Controller leap;       // LEAP controller
-MapLeapPoints mapToScreen; // Class to map the real co-ordinates to screen space
-IAudioPlayer audioPlayer; // IAudioPlayer for creating/playing sound
-GestureRecogniser gestureRecogniser; // For recognising gestures
+Controller leap;                           // LEAP controller
+MapLeapPoints mapToScreen;                 // Class to map the real co-ordinates to screen space
+IAudioPlayer audioPlayer;                  // IAudioPlayer for creating/playing sound
+GestureRecogniser gestureRecogniser;       // For recognising gestures
 
-Frame frame; // The most recent frame
+Frame frame;                               // The most recent frame
 
 
 /**************************************************************************************************/
@@ -62,7 +61,7 @@ float rightCircleRadius;
 /**************************************************************************************************/
 //
 /* Setup method
- //
+//
 /**************************************************************************************************/
 
 void setup() 
@@ -101,14 +100,22 @@ void setup()
   DISTANCE_TO_PAUSE_HITS);
 
   // Set up Audio Player
-  audioPlayer = new TablaSampler(this);
+  try
+  {
+    audioPlayer = new TablaSampler(this);
+  }
+  catch(Exception ex)
+  {  
+    ex.printStackTrace();
+    System.out.println(ex.getMessage());
+  }
 }
 
 
 /**************************************************************************************************/
 //
 /* Draw Method (Looped)
- //
+//
 /**************************************************************************************************/
 
 void draw() 
@@ -121,76 +128,84 @@ void draw()
   fill(247, 232, 179);
   ellipse(leftCircleCenter.getX(), leftCircleCenter.getY(), leftCircleRadius, leftCircleRadius);
   //  // Syahi in middle
-  //  fill(32, 24, 18);
-  //  ellipse(width * (3.5/ 12.0), height/2.0, width * (1.0 /8.0), width * (1.0/8.0));
+  fill(0, 0, 0);
+  ellipse(width * (3.5/ 12.0), height/2.0, width * (1.0 /15.0), width * (1.0/15.0));
 
   // Smaller Drum
   fill(247, 232, 179);
   ellipse(rightCircleCenter.getX(), rightCircleCenter.getY(), rightCircleRadius, rightCircleRadius);
   //  // Syahi in middle
-  //  fill(32, 24, 18);
-  //  ellipse(width * (9.0/12.0), height/2.0, width * (1.0/8.0), width * (1.0/8.0));
+  fill(0, 0, 0);
+  ellipse(width * (9.0/12.0), height/2.0, width * (1.0/15.0), width * (1.0/15.0));
 
   // ...
 
   // Set hand/ finger/ tool colour
   stroke(55);
 
-  // Get the most recent frame
-  frame = leap.frame();
-
-  /*************************************************************/
-  /* For each hand                      
-  /*************************************************************/
-
-  for (Hand hand : frame.hands ()) 
+  try
   {
-
+  
+    // Get the most recent frame
+    frame = leap.frame();
+  
     /*************************************************************/
-    /* For each finger                      
+    /* For each hand                      
     /*************************************************************/
-
-    for (Finger finger : hand.fingers ()) 
+  
+    for (Hand hand : frame.hands ()) 
     {
-      // Work out if sound has been triggered
-      Gesture gesture = gestureRecogniser.checkForGestures(finger);
-
-      // If gesture was detected, check to see if a note should be played
-      // by converting to MIDI message
-      
-      if (gesture != null)
-      { 
-        MidiMessage midi = mapToScreen.convertToMidiMessage(gesture);
-       
-        // If a Midi message was returned, pause gesture recognition in that position and play the sound 
-        if (midi !=null)
-        {
-          // Pause recognition for set no of frames in that position
-          gestureRecogniser.pausePosition(finger);
-          
-          // Play sound
-          audioPlayer.playSample(midi);
+  
+      /*************************************************************/
+      /* For each finger                      
+      /*************************************************************/
+  
+      for (Finger finger : hand.fingers ()) 
+      {
+        // Work out if sound has been triggered
+        Gesture gesture = gestureRecogniser.checkForGestures(finger);
+  
+        // If gesture was detected, check to see if a note should be played
+        // by converting to MIDI message
+        
+        if (gesture != null)
+        { 
+          MidiMessage midi = mapToScreen.convertToMidiMessage(gesture);
+         
+          // If a Midi message was returned, pause gesture recognition in that position and play the sound 
+          if (midi !=null)
+          {
+            // Pause recognition for set no of frames in that position
+            gestureRecogniser.pausePosition(finger);
+            
+            // Play sound
+            audioPlayer.playSample(midi);
+          }
         }
+  
+        // Clean up the map storing gestures
+        gestureRecogniser.cleanUpFingerMap(frame);
+  
+  
+        // Get the finger position in real space
+        Vector fingerPosition   = finger.tipPosition();
+  
+        // Flip y and z axis for the natural way to play a drum
+        fingerPosition = new Vector(fingerPosition.getX(), fingerPosition.getZ(), fingerPosition.getY());
+        
+        // Convert to screen space
+        fingerPosition = mapToScreen.convertLeapCoordinates(fingerPosition);
+  
+        // Draw finger
+        fill(0);
+        float ellipseDiameter = ELLIPSE_MIN + (((zRange - fingerPosition.getZ()) / zRange) * (ellipseRange));
+        ellipse(fingerPosition.getX(), fingerPosition.getY(), ellipseDiameter, ellipseDiameter);
       }
-
-      // Clean up the map storing gestures
-      gestureRecogniser.cleanUpFingerMap(frame);
-
-
-      // Get the finger position in real space
-      Vector fingerPosition   = finger.tipPosition();
-
-      // Flip y and z axis for the natural way to play a drum
-      fingerPosition = new Vector(fingerPosition.getX(), fingerPosition.getZ(), fingerPosition.getY());
-
-      // Convert to screen space
-      fingerPosition = mapToScreen.convertLeapCoordinates(fingerPosition);
-
-      // Draw finger
-      fill(0);
-      float ellipseDiameter = ELLIPSE_MIN + (((zRange - fingerPosition.getZ()) / zRange) * (ellipseRange));
-      ellipse(fingerPosition.getX(), fingerPosition.getY(), ellipseDiameter, ellipseDiameter);
     }
   }
+  catch(Exception ex)
+  {
+    System.out.println(ex.getMessage());
+    System.exit(0);
+  }
 }
-

@@ -99,13 +99,22 @@ public class MapLeapPoints
     // Initialise the screen vector
     float[] screenArray = new float[3];
     
-    for(int i=0; i<=2; i++)
+    try
     {
-      // Normalise to get point between 0 and 1
-      normalisedArray[i] = (realCoordinates.get(i) - leapMin.get(i)) / (leapRange.get(i));
-      
-      // Translate to screen space
-      screenArray[i] = screenMin.get(i) + (normalisedArray[i] * screenRange.get(i)); 
+      for(int i=0; i<=2; i++)
+      {
+        // Normalise to get point between 0 and 1
+        normalisedArray[i] = (realCoordinates.get(i) - leapMin.get(i)) / (leapRange.get(i));
+        
+        // Translate to screen space
+        screenArray[i] = screenMin.get(i) + (normalisedArray[i] * screenRange.get(i)); 
+      }
+    }
+    // Catch any errors occuring during the calculations
+    catch(Exception ex)
+    {
+      ex.printStackTrace();
+      throw new ArithmeticException("Error: Failed to convert LEAP coordinates to screen space");
     }
     
     return new Vector(screenArray[0], screenArray[1], screenArray[2]);
@@ -127,47 +136,59 @@ public class MapLeapPoints
    
   public MidiMessage convertToMidiMessage(Gesture gesture)
   {    
-    /********************************************************************************/
-    /* Firstly, convert the velocity into the range 0-127
-    /********************************************************************************/
-
-    int velocity = Math.round(((gesture.getFastestVelocity() - minimumVelocity) / velocityRange) * 127);
-
-    /********************************************************************************/
-    /* Secondly, convert the note between 0-127 and determine which drum it is
-    /********************************************************************************/
     
-    // convert to screen space
-    Vector position = gesture.getEndPosition(); 
-    position = new Vector(position.getX(), position.getZ(), position.getY()); // Flip y and z for this system
-    position = convertLeapCoordinates(position);
-    
-    // Work out if the left drum has been hit
-    
-    float xLength = position.getX() - leftDrumCenter.getX();
-    float yLength = position.getY() - leftDrumCenter.getY();
-    float distance = (float) Math.sqrt((xLength * xLength) + (yLength * yLength));
-    
-    // If left drum has been hit
-    if (distance <= leftDrumRadius)
+    try
     {
-      // Calculate note between 0-127 and return whole Midi message
-      int note = Math.round((distance/leftDrumRadius) * 127);
-      return new MidiMessage(velocity, note, TablaDrum.LEFT);
-    }
-    // Else check if right drum is hit
-    else
-    {
-      xLength = position.getX() - rightDrumCenter.getX();
-      yLength = position.getY() - rightDrumCenter.getY();
-      distance = (float) Math.sqrt((xLength * xLength) + (yLength * yLength));
-
-      if (distance <= rightDrumRadius)
+    
+      /********************************************************************************/
+      /* Firstly, convert the velocity into the range 0-127
+      /********************************************************************************/
+  
+      int velocity = Math.round(((gesture.getFastestVelocity() - minimumVelocity) / velocityRange) * 127);
+  
+      /********************************************************************************/
+      /* Secondly, convert the note between 0-127 and determine which drum it is
+      /********************************************************************************/
+      
+      // convert to screen space
+      Vector position = gesture.getEndPosition(); 
+      position = new Vector(position.getX(), position.getZ(), position.getY()); // Flip y and z for this system
+      position = convertLeapCoordinates(position);
+      
+      // Work out if the left drum has been hit
+      
+      float xLength = position.getX() - leftDrumCenter.getX();
+      float yLength = position.getY() - leftDrumCenter.getY();
+      float distance = (float) Math.sqrt((xLength * xLength) + (yLength * yLength));
+      
+      // If left drum has been hit
+      if (distance <= leftDrumRadius)
       {
         // Calculate note between 0-127 and return whole Midi message
-        int note = Math.round((distance/rightDrumRadius) * 127);
-        return new MidiMessage(velocity, note, TablaDrum.RIGHT);
-      } 
+        int note = Math.round((distance/leftDrumRadius) * 127);
+        return new MidiMessage(velocity, note, TablaDrum.LEFT);
+      }
+      // Else check if right drum is hit
+      else
+      {
+        xLength = position.getX() - rightDrumCenter.getX();
+        yLength = position.getY() - rightDrumCenter.getY();
+        distance = (float) Math.sqrt((xLength * xLength) + (yLength * yLength));
+  
+        if (distance <= rightDrumRadius)
+        {
+          // Calculate note between 0-127 and return whole Midi message
+          int note = Math.round((distance/rightDrumRadius) * 127);
+          return new MidiMessage(velocity, note, TablaDrum.RIGHT);
+        } 
+      }
+      
+    }
+    // Catch any errors occuring from the calculations converting to midi message
+    catch(Exception ex)
+    {
+      ex.printStackTrace();
+      throw new ArithmeticException("Error: Failed to convert finger movements to MIDI message for control virtual drum"); 
     }
     
     // If reached here, no drum was hit return null
