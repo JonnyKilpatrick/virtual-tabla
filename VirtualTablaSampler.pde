@@ -102,7 +102,8 @@ void setup()
   // Set up Audio Player
   try
   {
-    audioPlayer = new TablaSampler(this);
+    //audioPlayer = new TablaSampler(this);
+    audioPlayer = new TablaSynthesiser();
   }
   catch(Exception ex)
   {  

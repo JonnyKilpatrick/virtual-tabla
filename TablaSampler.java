@@ -179,7 +179,8 @@ public class TablaSampler implements IAudioPlayer
   /**************************************************************************************************/
   
   /**
-   * Class constructor, takes the parent PApplet, sets up the JSyn unit generators to play tabla samples
+   * Implements playSample method from IAudioPlayer interface, using the MIDI message to read which 
+   * drum was hit and then call the relevant private method
    * @param midiMessage MidiMessage the message containing velocity, note and right/left drum 
    */
   public void playSample(MidiMessage midi)
