@@ -210,3 +210,8 @@ void draw()
     System.exit(0);
   }
 }
+
+void mouseClicked()
+{
+  audioPlayer.playSample(new MidiMessage(127, 64, TablaDrum.RIGHT));
+}

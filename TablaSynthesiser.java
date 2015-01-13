@@ -37,7 +37,7 @@ public class TablaSynthesiser implements IAudioPlayer
     synth = JSyn.createSynthesizer();
     synth.start();
     synth.add(lineOut = new LineOut());
-    lineOut.start();
+    //lineOut.start();
     
     // New drum synth
     drumSynth = new DrumSynthNote(synth, lineOut);
@@ -110,7 +110,7 @@ public class TablaSynthesiser implements IAudioPlayer
     try
     {
       
-      drumSynth.playNote(300, 1, 100, 30);
+      drumSynth.playNote(300, 1, 1, 40);
       
     }
     catch(Exception ex)
