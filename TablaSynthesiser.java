@@ -21,6 +21,7 @@ public class TablaSynthesiser implements IAudioPlayer
   Synthesizer synth;     // JSyn synthesizer
   LineOut lineOut;       // Output
   DrumSynthNote drumSynth;
+  DrumSynthNote drumSynthOne;
   
   /**************************************************************************************************/
   //
@@ -37,10 +38,10 @@ public class TablaSynthesiser implements IAudioPlayer
     synth = JSyn.createSynthesizer();
     synth.start();
     synth.add(lineOut = new LineOut());
-    //lineOut.start();
-    
+    //
     // New drum synth
     drumSynth = new DrumSynthNote(synth, lineOut);
+    drumSynthOne = new DrumSynthNote(synth, lineOut);
   }
   
   
@@ -87,7 +88,8 @@ public class TablaSynthesiser implements IAudioPlayer
     
     try
     {
-      
+      double amplitude = midi.getVelocity() / 127.0;
+      drumSynthOne.playNote(150, amplitude, 3, 40);
     }
     catch(Exception ex)
     {
@@ -109,9 +111,8 @@ public class TablaSynthesiser implements IAudioPlayer
     
     try
     {
-      
-      drumSynth.playNote(300, 1, 1, 40);
-      
+      double amplitude = midi.getVelocity() / 127.0;
+      drumSynth.playNote(300, amplitude, 3, 40);
     }
     catch(Exception ex)
     {
