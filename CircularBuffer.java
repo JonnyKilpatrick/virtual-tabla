@@ -42,12 +42,22 @@ public class CircularBuffer
     {
       throw new IllegalArgumentException("Cannot create a buffer of size 0!");
     }
+    if(delayLength > bufferSize || delayOfSecondReadPointer > bufferSize)
+    {
+      throw new IllegalArgumentException("Delay cannot be larger than the buffer size!");
+    }
     
-    this.bufferSize = bufferSize; //<>//
+    this.bufferSize = bufferSize;
     circularBuffer = new double[bufferSize];
     readPointer = 0;
     writePointer = delayLength % bufferSize;
-    secondReadPointer = Math.abs((writePointer - delayOfSecondReadPointer) % bufferSize); 
+    secondReadPointer = ((writePointer - delayOfSecondReadPointer) % bufferSize);
+   
+    // Make sure pointer is not negative 
+    if(secondReadPointer < 0)
+    {
+      secondReadPointer += bufferSize;
+    }
     
     // Populate circular buffer with initial data
     for(int i=0; i<initialData.length; i++)
@@ -71,7 +81,7 @@ public class CircularBuffer
    {
      // FIRST READ POINTER
      // Get value at current pointer position
-     double pointer1 = circularBuffer[readPointer]; //<>//
+     double pointer1 = circularBuffer[readPointer]; 
      
      // Advance the read pointer
      readPointer = (readPointer + 1) % bufferSize;
@@ -103,6 +113,50 @@ public class CircularBuffer
      
      // Advance the write pointer
      writePointer = (writePointer + 1) % bufferSize;
+   }
+   
+   
+  /**************************************************************************************************/
+  //
+  /* setPointer1Delay  
+  //
+  /**************************************************************************************************/
+  /**
+   * Update the position of pointer1
+   * @param delay int the number of samples deleay (distance from pointer to the write pointer)
+   */
+   
+   public void setPointer1Delay(int delay)
+   { 
+     readPointer = (writePointer - delay) % bufferSize;
+     
+     // Make sure non-negative
+     if(readPointer < 0)
+     {
+       readPointer += bufferSize;
+     }
+   }
+   
+   
+  /**************************************************************************************************/
+  //
+  /* setPointer2Delay  
+  //
+  /**************************************************************************************************/
+  /**
+   * Update the position of pointer2
+   * @param delay int the number of samples deleay (distance from pointer to the write pointer)
+   */
+   
+   public void setPointer2Delay(int delay)
+   { 
+     secondReadPointer = Math.abs((writePointer - delay) % bufferSize);
+     
+     // Make sure non-negative
+     if(secondReadPointer < 0)
+     {
+       secondReadPointer += bufferSize;
+     }
    }
    
    

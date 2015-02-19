@@ -89,7 +89,7 @@ public class TablaSynthesiser implements IAudioPlayer
     try
     {
       double amplitude = midi.getVelocity() / 127.0;
-      drumSynthOne.playNote(150, amplitude, 3, 40);
+      drumSynthOne.playNote(150, amplitude, 150, 40);
     }
     catch(Exception ex)
     {
@@ -112,7 +112,8 @@ public class TablaSynthesiser implements IAudioPlayer
     try
     {
       double amplitude = midi.getVelocity() / 127.0;
-      drumSynth.playNote(300, amplitude, 3, 40);
+      drumSynth.playNote(300, amplitude, 150, 40);
+      drumSynth.pitchBend(400, 3);
     }
     catch(Exception ex)
     {
