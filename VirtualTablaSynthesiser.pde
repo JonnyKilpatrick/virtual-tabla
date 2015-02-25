@@ -103,7 +103,7 @@ void setup()
   try
   {
     //audioPlayer = new TablaSampler(this);
-    audioPlayer = new TablaSynthesiser();
+    audioPlayer = new TablaSynthesiser(this);
   }
   catch(Exception ex)
   {  
