@@ -47,16 +47,8 @@ public class LowpassFilter implements IFilter
    */
    
    public double processSample(double sample)
-   {
-     double random = Math.random();
-     int sign = 1;
-     if(random>1)
-     {
-       sign = -1;
-     }
-     
+   { 
      double newSample = shorteningFactor * ((stretchingFactorTakeOne * sample) + (stretchingFactor * lastInput));
-     newSample *= sign;
      lastInput = sample;
      return newSample;
    }

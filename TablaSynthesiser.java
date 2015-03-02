@@ -18,7 +18,21 @@ public class TablaSynthesiser implements IAudioPlayer
   //
   /**************************************************************************************************/
   
-  private final String TABLA_SAMPLE = "Samples/High/21_14_01.aif";
+  // Samples
+  private final String HIGH_TABLA = "Samples/High/21_14_01.aif";
+  private final String LOW_TABLA = "Samples/Low/21_15_09.aif";
+  private final String HIGH_RIM = "Samples/High/21_14_11.aif";
+  private final String LOW_RIM = "Samples/Low/21_15_07.aif";
+  
+  // Frequencies
+  private final double HIGHEST_FREQUENCY_HI = 430;
+  private final double LOWEST_FREQUENCY_HI = 400;
+  private final double HIGHEST_FREQUENCY_LOW = 120;
+  private final double LOWEST_FREQUENCY_LOW = 100;
+  
+  // Durations
+  private final double LONGEST_DURATION = 8;
+  private final double SHORTEST_DURATION = 0.1;
   
   
   /**************************************************************************************************/
@@ -28,11 +42,19 @@ public class TablaSynthesiser implements IAudioPlayer
   /**************************************************************************************************/
 
   // JSyn Unit Generators
-
-  Synthesizer synth;     // JSyn synthesizer
-  LineOut lineOut;       // Output
-  DrumSynthNote drumSynth;
-  DrumSynthNote drumSynthOne;
+  private Synthesizer synth;     // JSyn synthesizer
+  private LineOut lineOut;       // Output
+  
+  // Drum synthesisers
+  private DrumSynthNote hiCenterSynth;
+  private DrumSynthNote hiRimSynth;
+  private DrumSynthNote lowCenterSynth;
+  private DrumSynthNote lowRimSynth;
+  
+  private double hiFrequencyRange;
+  private double lowFrequencyRange;
+  private double durationRange;
+  
 
   /**************************************************************************************************/
   //
@@ -42,6 +64,7 @@ public class TablaSynthesiser implements IAudioPlayer
 
   /**
    * Class constructor
+   * @param parent PApplet the sketch the return the sketch path for files
    */
   public TablaSynthesiser(PApplet parent) throws IOException
   {
@@ -50,9 +73,18 @@ public class TablaSynthesiser implements IAudioPlayer
     synth.start();
     synth.add(lineOut = new LineOut());
 
-    // New drum synth
-    drumSynth = new DrumSynthNote(synth, lineOut, readSamplesFromFile(parent.sketchPath("") + TABLA_SAMPLE));
-    drumSynthOne = new DrumSynthNote(synth, lineOut, null);
+    // Initialise drum synthesisers
+    hiCenterSynth = new DrumSynthNote(synth, lineOut, readSamplesFromFile(parent.sketchPath("") + HIGH_TABLA));
+    lowCenterSynth = new DrumSynthNote(synth, lineOut, readSamplesFromFile(parent.sketchPath("") + LOW_TABLA));
+    hiRimSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_RIM));
+    lowRimSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_RIM));
+    
+    // Work out frequency ranges
+    hiFrequencyRange = HIGHEST_FREQUENCY_HI - LOWEST_FREQUENCY_HI;
+    lowFrequencyRange = HIGHEST_FREQUENCY_LOW - LOWEST_FREQUENCY_LOW;
+    
+    // Work out duration range
+    durationRange = LONGEST_DURATION - SHORTEST_DURATION;
   }
 
 
@@ -98,8 +130,20 @@ public class TablaSynthesiser implements IAudioPlayer
 
     try
     {
-      double amplitude = midi.getVelocity() / 127.0;
-      drumSynthOne.playNote(100, amplitude, 150, 40);
+      // Set the amplitude
+      double amplitude = (double) midi.getVelocity() / 127.0;
+      
+      // If the rim is hit
+      if(note > 110)
+      {
+        lowRimSynth.playNote(180, amplitude, 0.1, 20);
+      }
+      else
+      {
+        double frequency = LOWEST_FREQUENCY_LOW + (lowFrequencyRange * ((double) note/127));
+        double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
+        lowCenterSynth.playNote(frequency, amplitude, duration, 60);
+      }
     }
     catch(Exception ex)
     {
@@ -121,8 +165,21 @@ public class TablaSynthesiser implements IAudioPlayer
 
     try
     {
-      double amplitude = midi.getVelocity() / 127.0;
-      drumSynth.playNote(500, amplitude, 3, 40);
+      // Set the amplitude
+      double amplitude = (double) midi.getVelocity() / 127.0;
+      
+      // If the rim is hit
+      if(note > 110)
+      {
+        hiRimSynth.playNote(430, amplitude, 0.1, 20);
+      }
+      else
+      {
+        double frequency = LOWEST_FREQUENCY_HI + (hiFrequencyRange * ((double) note/127));
+        double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
+        hiCenterSynth.playNote(frequency, amplitude, duration, 60);
+        //hiCenterSynth.pitchBend(frequency + 30, 1.5);
+      }
     }
     catch(Exception ex)
     {
@@ -134,6 +191,7 @@ public class TablaSynthesiser implements IAudioPlayer
   /**
    * Reads data from a file to initialise the wave table, returning a double array of the data samples 
    * @param filePath String the url of the file
+   * @return double[] the double array of samples from the file
    */
    
   private double[] readSamplesFromFile(String filePath) throws IOException

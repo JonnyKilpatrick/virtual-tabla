@@ -18,34 +18,34 @@ public class TablaSampler implements IAudioPlayer
   //
   /**************************************************************************************************/
   
-  PApplet parent;        // PApplet the parent to use the processing library
+  private PApplet parent;        // PApplet the parent to use the processing library
   
-  Synthesizer synth;     // JSyn synthesizer
+  private Synthesizer synth;     // JSyn synthesizer
   
   // SAMPLES
-  FloatSample lowCenter1; // Drum sample
-  FloatSample lowCenter2; // Drum sample
-  FloatSample lowMid1;    // Drum sample
-  FloatSample lowMid2;    // Drum sample
-  FloatSample lowRim1;    // Drum sample
-  FloatSample lowRim2;    // Drum sample
+  private FloatSample lowCenter1; // Drum sample
+  private FloatSample lowCenter2; // Drum sample
+  private FloatSample lowMid1;    // Drum sample
+  private FloatSample lowMid2;    // Drum sample
+  private FloatSample lowRim1;    // Drum sample
+  private FloatSample lowRim2;    // Drum sample
   
-  FloatSample hiCenter1; // Drum sample
-  FloatSample hiCenter2; // Drum sample
-  FloatSample hiMid1;    // Drum sample
-  FloatSample hiMid2;    // Drum sample
-  FloatSample hiRim1;    // Drum sample
-  FloatSample hiRim2;    // Drum sample
+  private FloatSample hiCenter1; // Drum sample
+  private FloatSample hiCenter2; // Drum sample
+  private FloatSample hiMid1;    // Drum sample
+  private FloatSample hiMid2;    // Drum sample
+  private FloatSample hiRim1;    // Drum sample
+  private FloatSample hiRim2;    // Drum sample
   
   // SAMPLE PLAYERS
-  FixedRateMonoReader lowCenter;  // Sample player
-  FixedRateMonoReader lowMid;     // Sample player
-  FixedRateMonoReader lowRim;     // Sample player
-  FixedRateMonoReader hiCenter;   // Sample player
-  FixedRateMonoReader hiMid;      // Sample player
-  FixedRateMonoReader hiRim;      // Sample player
+  private FixedRateMonoReader lowCenter;  // Sample player
+  private FixedRateMonoReader lowMid;     // Sample player
+  private FixedRateMonoReader lowRim;     // Sample player
+  private FixedRateMonoReader hiCenter;   // Sample player
+  private FixedRateMonoReader hiMid;      // Sample player
+  private FixedRateMonoReader hiRim;      // Sample player
   
-  LineOut lineOut;       // Output
+  private LineOut lineOut;       // Output
   
   
   /**************************************************************************************************/

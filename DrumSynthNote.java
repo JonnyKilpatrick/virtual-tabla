@@ -654,7 +654,7 @@ public class DrumSynthNote
      }
      
      // Set c1 and c2 initial values in the filters
-     double fracPart = loop - numSamples; //<>//
+     double fracPart = loop - numSamples;
      double coefficient = (1-fracPart)/(1+fracPart);
      allpassFilterReader1.setCoefficient(coefficient);
      allpassFilterReader2.setCoefficient(coefficient);
