@@ -47,9 +47,9 @@ public class TablaSynthesiser implements IAudioPlayer
   
   // Drum synthesisers
   private DrumSynthNote hiCenterSynth;
-  private DrumSynthNote hiRimSynth;
+//  private DrumSynthNote hiRimSynth;
   private DrumSynthNote lowCenterSynth;
-  private DrumSynthNote lowRimSynth;
+//  private DrumSynthNote lowRimSynth;
   
   private double hiFrequencyRange;
   private double lowFrequencyRange;
@@ -70,14 +70,15 @@ public class TablaSynthesiser implements IAudioPlayer
   {
     // Initialise and start synthesizer with a line out
     synth = JSyn.createSynthesizer();
+    synth.getAudioDeviceManager().setSuggestedOutputLatency( 0.04 );
     synth.start();
     synth.add(lineOut = new LineOut());
 
     // Initialise drum synthesisers
-    hiCenterSynth = new DrumSynthNote(synth, lineOut, readSamplesFromFile(parent.sketchPath("") + HIGH_TABLA));
-    lowCenterSynth = new DrumSynthNote(synth, lineOut, readSamplesFromFile(parent.sketchPath("") + LOW_TABLA));
-    hiRimSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_RIM));
-    lowRimSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_RIM));
+    hiCenterSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_TABLA));
+    lowCenterSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_TABLA));
+    //hiRimSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_RIM));
+    //lowRimSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_RIM));
     
     // Work out frequency ranges
     hiFrequencyRange = HIGHEST_FREQUENCY_HI - LOWEST_FREQUENCY_HI;
@@ -136,7 +137,7 @@ public class TablaSynthesiser implements IAudioPlayer
       // If the rim is hit
       if(note > 110)
       {
-        lowRimSynth.playNote(180, amplitude, 0.1, 20);
+//        lowRimSynth.playNote(180, amplitude, 10, 20);
       }
       else
       {
@@ -171,14 +172,14 @@ public class TablaSynthesiser implements IAudioPlayer
       // If the rim is hit
       if(note > 110)
       {
-        hiRimSynth.playNote(430, amplitude, 0.1, 20);
+//        hiRimSynth.playNote(430, amplitude, 10, 20);
       }
       else
       {
         double frequency = LOWEST_FREQUENCY_HI + (hiFrequencyRange * ((double) note/127));
         double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
         hiCenterSynth.playNote(frequency, amplitude, duration, 60);
-        //hiCenterSynth.pitchBend(frequency + 30, 1.5);
+        //hiCenterSynth.pitchBend(frequency + 20, 5);
       }
     }
     catch(Exception ex)
@@ -189,22 +190,22 @@ public class TablaSynthesiser implements IAudioPlayer
   }
   
   /**
-   * Reads data from a file to initialise the wave table, returning a double array of the data samples 
+   * Reads data from a file to initialise the wave table, returning a float array of the data samples 
    * @param filePath String the url of the file
-   * @return double[] the double array of samples from the file
+   * @return float[] the float array of samples from the file
    */
    
-  private double[] readSamplesFromFile(String filePath) throws IOException
+  private float[] readSamplesFromFile(String filePath) throws IOException
   {
     File file = new File(filePath);
     FloatSample sample = SampleLoader.loadFloatSample(file);
     
     // Return the sample as a double array
-    double[] doubleTable = new double[sample.getNumFrames()];
+    float[] doubleTable = new float[sample.getNumFrames()];
     
     for(int i=0; i<sample.getNumFrames(); i++)
     {
-      doubleTable[i] = sample.readDouble(i);
+      doubleTable[i] = (float) sample.readDouble(i);
     }
     return doubleTable;
   }

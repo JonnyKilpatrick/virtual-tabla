@@ -1,8 +1,14 @@
+import com.jsyn.*;
+import com.jsyn.data.*;
+import com.jsyn.unitgen.*;
+import com.jsyn.util.*;
+
 /**
  * Implementation for an Allpass filter with a given coefficient.
+ s* Has one input and one output, so extends UnitFilter
  */
  
-public class AllpassFilter implements IFilter
+public class AllpassFilter extends UnitFilter
 {
   
   /**************************************************************************************************/
@@ -27,6 +33,7 @@ public class AllpassFilter implements IFilter
    
   public AllpassFilter(double coefficient)
   {
+    super();
     this.coefficient = coefficient;
     lastInput = 0;
     lastOutput = 0;
@@ -35,21 +42,29 @@ public class AllpassFilter implements IFilter
   
   /**************************************************************************************************/
   //
-  /* Process  
+  /* Generate  
   //
   /**************************************************************************************************/
   /**
    * Process one sample through the filter
-   * @param sample double the input sample value
-   * @return double the output value from the filter
+   * @param int start
+   * @param int limit
    */
-   
-   public double processSample(double sample)
+
+   public void generate(int start, int limit)
    {
-     double newSample = (coefficient*sample) + lastInput - (coefficient*lastOutput);
-     lastInput = sample;
-     lastOutput = newSample;
-     return newSample;
+     // Get inputs from ports
+     double[] inputs = input.getValues();
+     double[] outputs = output.getValues();
+     
+     for(int i=start; i<limit; i++)
+     {
+       double sample = inputs[i];
+       double newSample = (coefficient*sample) + lastInput - (coefficient*lastOutput);
+       lastInput = sample;
+       lastOutput = newSample;
+       outputs[i] = newSample;
+     }
    }
    
   /**************************************************************************************************/

@@ -1,8 +1,17 @@
+import com.jsyn.*;
+import com.jsyn.data.*;
+import com.jsyn.unitgen.*;
+import com.jsyn.util.*;
+import com.jsyn.ports.UnitInputPort;
+import com.jsyn.ports.UnitOutputPort;
+import com.jsyn.unitgen.UnitGenerator;
+
 /**
  * Implementation for an LowPass filter with given shortening / stretching factors.
+ * Has one input and one output, so extends UnitFilter
  */
  
-public class LowpassFilter implements IFilter
+public class LowpassFilter extends UnitFilter
 {
   
   /**************************************************************************************************/
@@ -28,6 +37,7 @@ public class LowpassFilter implements IFilter
    
   public LowpassFilter(double shorteningFactor, double stretchingFactor)
   {
+    super();
     this.shorteningFactor = shorteningFactor;
     this.stretchingFactor = stretchingFactor;
     stretchingFactorTakeOne = 1 - stretchingFactor;
@@ -37,20 +47,29 @@ public class LowpassFilter implements IFilter
   
   /**************************************************************************************************/
   //
-  /* Process  
+  /* Generate  
   //
   /**************************************************************************************************/
   /**
-   * Process one sample through the filter
-   * @param sample double the input sample value
-   * @return double the output value from the filter
+   * Process one sample through the filter, overwridden from UnitGenerator
+   * @param start int
+   * @param limit int 
    */
    
-   public double processSample(double sample)
+   @Override
+   public void generate(int start, int limit)
    { 
-     double newSample = shorteningFactor * ((stretchingFactorTakeOne * sample) + (stretchingFactor * lastInput));
-     lastInput = sample;
-     return newSample;
+     // Get input from ports
+     double[] inputs = input.getValues();
+     double[] outputs = output.getValues();
+     
+     for(int i=start; i<limit; i++)
+     {
+       double sample = inputs[i];
+       double newSample = shorteningFactor * ((stretchingFactorTakeOne * sample) + (stretchingFactor * lastInput));
+       lastInput = sample;
+       outputs[i] = newSample;
+     }
    }
    
   /**************************************************************************************************/

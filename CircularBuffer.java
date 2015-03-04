@@ -1,12 +1,21 @@
+import com.jsyn.*;
+import com.jsyn.data.*;
+import com.jsyn.unitgen.*;
+import com.jsyn.util.*;
+import com.jsyn.ports.UnitInputPort;
+import com.jsyn.ports.UnitOutputPort;
+
+
 /**
  * Implementation for a Circular buffer.
  * Allows you to populate a circular buffer of doubles, then read / write from it, 
  * whilst internally keeping tracking of the read and write pointers. 
  * Also allows a second read pointer
  * Specifically for the use in synthesis with the Karplus-Strong algorithm, so must specify desired delay length 
+ * Has two one input and two outputs (one for each read pointer)
  */
  
-public class CircularBuffer
+public class CircularBuffer extends UnitFilter
 {
   
   /**************************************************************************************************/
@@ -21,6 +30,11 @@ public class CircularBuffer
   private int bufferSize;          // Size of the buffer
   private int secondReadPointer;   // Second read pointer
   
+  // Ports
+  //public UnitInputPort input;
+ // public UnitOutputPort outputA;
+  public UnitOutputPort outputB;
+  
   
   /**************************************************************************************************/
   //
@@ -32,11 +46,11 @@ public class CircularBuffer
    * @param size int the size of the circular buffer
    * @param delayLength int the distance from the read to the write pointer
    * @param delayOfSecondReadPointer int the distance from an optional second read pointer to the write pointer
-   * @param initialData double[] the array of initial data to populate the circular buffer,
-   *   does not have to fill the entire circular buffer
    */
-  public CircularBuffer(int bufferSize, int delayLength, int delayOfSecondReadPointer, double[] initialData)
+  public CircularBuffer(int bufferSize, int delayLength, int delayOfSecondReadPointer)
   {
+    super();
+    
     // Check parameters 
     if(bufferSize == 0)
     {
@@ -49,20 +63,55 @@ public class CircularBuffer
     
     this.bufferSize = bufferSize;
     circularBuffer = new double[bufferSize];
-    readPointer = 0;
-    writePointer = delayLength % bufferSize;
-    secondReadPointer = ((writePointer - delayOfSecondReadPointer) % bufferSize);
-   
-    // Make sure pointer is not negative 
-    if(secondReadPointer < 0)
-    {
-      secondReadPointer += bufferSize;
-    }
+    writePointer = 0;
+    readPointer = (bufferSize - delayLength) % bufferSize;
+    secondReadPointer = (bufferSize - delayOfSecondReadPointer) % bufferSize;
     
-    // Populate circular buffer with initial data
-    for(int i=0; i<initialData.length; i++)
+    // Add ports
+    //addPort(input = new UnitInputPort("Input"));
+    //addPort(outputA = new UnitOutputPort("OutputA"));
+    addPort(outputB = new UnitOutputPort("OutputB"));
+  }
+  
+  public void allocate(int bufferSize, int delayLength, int delayOfSecondReadPointer)
+  {
+    this.bufferSize = bufferSize;
+    circularBuffer = new double[bufferSize];
+    writePointer = 0;
+    readPointer = (bufferSize - delayLength) % bufferSize;
+    secondReadPointer = (bufferSize - delayOfSecondReadPointer) % bufferSize;
+  }
+  
+  
+  /**************************************************************************************************/
+  //
+  /* Generate  
+  //
+  /**************************************************************************************************/
+  /**
+   * Process one sample through the delay line
+   * @param int start
+   * @param int limit
+   */
+
+  public void generate(int start, int limit)
+  {
+    // Get inputs from ports
+    double[] inputs = input.getValues();
+    double[] outputAs = output.getValues();
+    double[] outputBs = outputB.getValues();
+
+    for(int i=start; i<limit; i++)
     {
-      circularBuffer[i] = initialData[i];
+      // Write input
+      write(inputs[i]);
+      
+      // Read from the buffer
+      double[] samples = read();
+      
+      // Output values to each port
+      outputAs[i] = samples[0];  // Pointer 1
+      outputBs[i] = samples[1];  // Pointer 2
     }
   }
   
@@ -76,8 +125,8 @@ public class CircularBuffer
    * Read the next value from the circular buffer, returning the value and moving the pointer on
    * @return double[] the values of the first and second read pointer from the buffer
    */
-   
-   public double[] read()
+
+   private double[] read()
    {
      // FIRST READ POINTER
      // Get value at current pointer position
@@ -106,7 +155,7 @@ public class CircularBuffer
    * @param value double the value to write to the buffer
    */
    
-   public void write(double value)
+   private void write(double value)
    {
      // Write value at current position
      circularBuffer[writePointer] = value;
@@ -150,67 +199,13 @@ public class CircularBuffer
    
    public void setPointer2Delay(int delay)
    { 
-     secondReadPointer = Math.abs((writePointer - delay) % bufferSize);
+     secondReadPointer = (writePointer - delay) % bufferSize;
      
      // Make sure non-negative
      if(secondReadPointer < 0)
      {
        secondReadPointer += bufferSize;
      }
-   }
-   
-   
-   
-   
-   public void print()
-   {
-     String print = "";
-     for(double value: circularBuffer)
-     {
-       print += value + ", ";
-     }
-     System.out.println(print);
-   }
-   
-   public static void main(String[] args)
-   {
-     CircularBuffer buffer = new CircularBuffer(5, 5, 5, new double[]{4f, 2f, 6f, 4f, 7f});
-     System.out.println("Read: " + buffer.read());
-     System.out.println("Write: 1");
-     buffer.write(1);
-     
-     System.out.println("Read: " + buffer.read());
-     System.out.println("Write: 1");
-     buffer.write(1);
-     
-     System.out.println("Read: " + buffer.read());
-     System.out.println("Write: 1");
-     buffer.write(1);
-     
-     System.out.println("Read: " + buffer.read());
-     System.out.println("Write: 1");
-     buffer.write(1);
-     
-     System.out.println("Read: " + buffer.read());
-     System.out.println("Write: 1");
-     buffer.write(1);
-     buffer.print();
-     
-     
-     System.out.println("Read: " + buffer.read());
-     buffer.write(8);
-     System.out.println("Read: " + buffer.read());
-     buffer.write(7);
-     System.out.println("Read: " + buffer.read());
-     buffer.write(6);
-     System.out.println("Read: " + buffer.read());
-     buffer.write(5);
-     System.out.println("Read: " + buffer.read());
-     buffer.write(4);
-     
-     buffer.print();
-     
-     
    }
   
 }
