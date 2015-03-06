@@ -5,10 +5,10 @@ import com.jsyn.unitgen.*;
 import com.jsyn.util.*;
 
 /**
- * Class for a DrumSynthNote, synthesises tabla sounds given MidiMessages
+ * Class for a KarplusStrongNote, synthesises tabla sounds given MidiMessages
  */
 
-public class DrumSynthNote
+public class KarplusStrongNote
 { 
   /**************************************************************************************************/
   //
@@ -46,7 +46,7 @@ public class DrumSynthNote
    * @param lineOut LineOut
    * @param initialData double[] initial samples to use to populate the wavetable, set to null to initialise with random values
    */
-  public DrumSynthNote(Synthesizer synth, LineOut lineOut, float[] initialData)
+  public KarplusStrongNote(Synthesizer synth, LineOut lineOut, float[] initialData)
   {
     
     // Setup
@@ -136,7 +136,7 @@ public class DrumSynthNote
      int numSamples = (int) loop;
      
      // Create the circular buffer and give it the initial data samples
-     buffer.allocate(600, numSamples, numSamples);
+     buffer.allocate(numSamples, numSamples);
 
      // Set initial values for decay stretching / shortening and all pass filter
      double shorteningFactor = 1.0;
@@ -289,3 +289,4 @@ public class DrumSynthNote
      pitchBendController.startBend(frequencyPointer1, frequencyPointer2, slideDuration);
    }
 }
+

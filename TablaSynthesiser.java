@@ -46,10 +46,12 @@ public class TablaSynthesiser implements IAudioPlayer
   private LineOut lineOut;       // Output
   
   // Drum synthesisers
-  private DrumSynthNote hiCenterSynth;
-//  private DrumSynthNote hiRimSynth;
-  private DrumSynthNote lowCenterSynth;
-//  private DrumSynthNote lowRimSynth;
+//  private KarplusStrongNote hiCenterSynth;
+//  private KarplusStrongNote hiRimSynth;
+//  private KarplusStrongNote lowCenterSynth;
+//  private KarplusStrongNote lowRimSynth;
+
+  private BandedWaveguideNote hiCenterSynth;
   
   private double hiFrequencyRange;
   private double lowFrequencyRange;
@@ -75,10 +77,10 @@ public class TablaSynthesiser implements IAudioPlayer
     synth.add(lineOut = new LineOut());
 
     // Initialise drum synthesisers
-    hiCenterSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_TABLA));
-    lowCenterSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_TABLA));
-    //hiRimSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_RIM));
-    //lowRimSynth = new DrumSynthNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_RIM));
+    hiCenterSynth = new BandedWaveguideNote(synth, lineOut, 3, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_TABLA));
+    //lowCenterSynth = new KarplusStrongNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_TABLA));
+    //hiRimSynth = new KarplusStrongNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_RIM));
+    //lowRimSynth = new KarplusStrongNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_RIM));
     
     // Work out frequency ranges
     hiFrequencyRange = HIGHEST_FREQUENCY_HI - LOWEST_FREQUENCY_HI;
@@ -143,7 +145,7 @@ public class TablaSynthesiser implements IAudioPlayer
       {
         double frequency = LOWEST_FREQUENCY_LOW + (lowFrequencyRange * ((double) note/127));
         double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
-        lowCenterSynth.playNote(frequency, amplitude, duration, 60);
+        //lowCenterSynth.playNote(frequency, amplitude, duration, 60);
       }
     }
     catch(Exception ex)
@@ -178,8 +180,16 @@ public class TablaSynthesiser implements IAudioPlayer
       {
         double frequency = LOWEST_FREQUENCY_HI + (hiFrequencyRange * ((double) note/127));
         double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
-        hiCenterSynth.playNote(frequency, amplitude, duration, 60);
-        //hiCenterSynth.pitchBend(frequency + 20, 5);
+        //hiCenterSynth.playNote(frequency, amplitude, duration, 60);
+        hiCenterSynth.playNote(
+          new WaveguideParameters[] {
+            new WaveguideParameters(940, 0.67, 4, 1.0),
+            new WaveguideParameters(940, 0.54, 2, 0.8),
+            new WaveguideParameters(940, 0.5, 2, 0.7)
+          },
+          940,
+          amplitude
+        );
       }
     }
     catch(Exception ex)

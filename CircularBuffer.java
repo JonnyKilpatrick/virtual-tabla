@@ -73,10 +73,20 @@ public class CircularBuffer extends UnitFilter
     addPort(outputB = new UnitOutputPort("OutputB"));
   }
   
-  public void allocate(int bufferSize, int delayLength, int delayOfSecondReadPointer)
+  
+  /**************************************************************************************************/
+  //
+  /* Allocate 
+  //
+  /**************************************************************************************************/
+  /**
+   * Sets a new size for the buffer
+   * @param delayLength int the distance from the read to the write pointer
+   * @param delayOfSecondReadPointer int the distance from an optional second read pointer to the write pointer
+   */
+  
+  public void allocate(int delayLength, int delayOfSecondReadPointer)
   {
-    this.bufferSize = bufferSize;
-    circularBuffer = new double[bufferSize];
     writePointer = 0;
     readPointer = (bufferSize - delayLength) % bufferSize;
     secondReadPointer = (bufferSize - delayOfSecondReadPointer) % bufferSize;
