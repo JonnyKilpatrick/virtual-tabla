@@ -5,7 +5,7 @@ import com.jsyn.util.*;
 
 /**
  * Implementation for an Allpass filter with a given coefficient.
- s* Has one input and one output, so extends UnitFilter
+ * Has one input and one output, so extends UnitFilter
  */
  
 public class AllpassFilter extends UnitFilter

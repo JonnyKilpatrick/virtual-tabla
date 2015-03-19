@@ -86,7 +86,11 @@ public class CircularBuffer extends UnitFilter
    */
   
   public void allocate(int delayLength, int delayOfSecondReadPointer)
-  {
+  { 
+    // Re initialise the array, so that values are set to 0;
+    circularBuffer = new double[bufferSize];
+    
+    // Set the pointers to the new position
     writePointer = 0;
     readPointer = (bufferSize - delayLength) % bufferSize;
     secondReadPointer = (bufferSize - delayOfSecondReadPointer) % bufferSize;

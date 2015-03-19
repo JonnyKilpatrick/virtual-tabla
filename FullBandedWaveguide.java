@@ -21,11 +21,10 @@ public class FullBandedWaveguide extends Circuit
   
   // UnitGenerators
   private SingleBandedWaveguide[] waveguides;
-  private MixerMono mixer;
+  private Mixer mixer;
   
   // Set up and input and output
-  public UnitInputPort input;
-  public PassThrough passThrough;
+  public UnitInputPort[] inputs;    // Array of inputs for each initial evaluator / delay line
   public UnitOutputPort output;
   
   
@@ -45,27 +44,31 @@ public class FullBandedWaveguide extends Circuit
   {
     super();
     
-    add(passThrough = new PassThrough());
-    addPort(input = passThrough.input);
-    
     // Create a mixer to mix all delay lines down to, with the correct number of inputs
-    mixer = new MixerMono(numSingleWaveguides);
+    mixer = new Mixer(numSingleWaveguides);
     // Output of circuit is the output of the mixer
     output = mixer.output;
     
+    // Create an input for eacg waveguide
+    inputs = new UnitInputPort[numSingleWaveguides];
+    
     // Create desired number of Single banded waveguides
     waveguides = new SingleBandedWaveguide[numSingleWaveguides];
+    
     for(int i=0; i<numSingleWaveguides; i++)
     {
-      // Also add to circuit
+      // Add port for this waveguide
+      addPort(inputs[i] = new UnitInputPort("Intput"));
+      
+      // Add waveguide to circuit
       add(waveguides[i] = new SingleBandedWaveguide(samplingRate, maxBufferSize));
       
-      // Connect input of this circuit to the input of each of the single banded waveguides
-      passThrough.output.connect(waveguides[i].input);
+      // Make each input correspond to the input of each waveguide
+      inputs[i] = waveguides[i].input;
       
       // Connect output of each single banded waveguide to the input of the mixer
       waveguides[i].output.connect(0, mixer.input, i); 
-    }
+    } 
   }
   
   /**************************************************************************************************/

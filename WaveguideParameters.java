@@ -31,15 +31,15 @@ public class WaveguideParameters
    * Class constructor
    * @param centerFrequency double the center frequency of the bandpass
    * @param amplitude double the amplitude of this frequency initially
-   * @param q double the bandwidth of the bandpass
+   * @param bandwidth double the bandwidth of the bandpass
    * @param gain double the gain for the bandpass
    */
-  public WaveguideParameters(double centerFrequency, double amplitude, double q, double gain)
+  public WaveguideParameters(double centerFrequency, double amplitude, double bandwidth, double gain)
   {
     this.centerFrequency = centerFrequency;
     this.amplitude = amplitude;
-    this.q = q;
-    this.gain = gain;
+    this.q = centerFrequency / bandwidth;
+    this.gain = gain;;
   }
   
   /**************************************************************************************************/
@@ -106,9 +106,9 @@ public class WaveguideParameters
   /**
    * @param q double the bandwidth of the band pass filter
    */
-  public void setQ(double q)
+  public void setBandWidth(double bandwidth)
   {
-    this.q = q;
+    this.q = centerFrequency / bandwidth;
   }  
 
   /**

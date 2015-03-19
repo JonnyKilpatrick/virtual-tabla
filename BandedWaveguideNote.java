@@ -3,6 +3,8 @@ import com.jsyn.*;
 import com.jsyn.data.*;
 import com.jsyn.unitgen.*;
 import com.jsyn.util.*;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Class for a BandedWaveguideNote, playes a single note on a banded waveguide
@@ -26,7 +28,7 @@ public class BandedWaveguideNote
   // JSyn Unit Generators  
   private Synthesizer synth;                           // JSyn synthesizer
   private LineOut lineOut;                             // Output
-  private FixedRateMonoReader initialInput;            // Evaluator to initialise the delay line with values
+  private FixedRateMonoReader[] initialInput;          // Array of evaluators to initialise the delay line with values
   private FullBandedWaveguide bandedWaveguide;         // BandedWaveguide
   private float[] initialData;  
   
@@ -50,7 +52,6 @@ public class BandedWaveguideNote
    */
   public BandedWaveguideNote(Synthesizer synth, LineOut lineOut, int numSingleWaveguides, float[] initialData)
   {
-    
     // Setup
     try
     {       
@@ -64,21 +65,33 @@ public class BandedWaveguideNote
       // Get the current default sampling rate, for Karplus-Strong calculations
       samplingRate = synth.getFrameRate();
       
-      // Create new reader to output the initial values
-      initialInput = new FixedRateMonoReader();
+      // Create new initial readers, one for each delay line
+      initialInput = new FixedRateMonoReader[numSingleWaveguides];
       
       // Create banded waveguide
       bandedWaveguide = new FullBandedWaveguide(samplingRate, MAX_BUFFER_SIZE, numSingleWaveguides);
       
-      // Add units to synthesiser
-      synth.add(initialInput);
+      // Add banded waveguide to synthesiser
       synth.add(bandedWaveguide);
       
-      // Connect units together
-      initialInput.output.connect(0, bandedWaveguide.input, 0);
+      for(int i=0; i<numSingleWaveguides; i++)
+      {
+        synth.add(initialInput[i] = new FixedRateMonoReader());
+        
+        // Connect to correct input on the banded waveguide
+        initialInput[i].output.connect(0, bandedWaveguide.inputs[i], 0);
+        
+        // Also connect initial input to line out
+        //initialInput[i].output.connect(0, lineOut.input, 0);
+        //initialInput[i].output.connect(0, lineOut.input, 1);
+                
+        // Connect the output of the banded waveguide to every input
+        bandedWaveguide.output.connect(0, bandedWaveguide.inputs[i], 0);
+      }
+      
+      // Connect output of banded waveguides to lineout
       bandedWaveguide.output.connect(0, lineOut.input, 0);
       bandedWaveguide.output.connect(0, lineOut.input, 1);
-      bandedWaveguide.output.connect(0, bandedWaveguide.input, 0);
     }
     // Handle errors
     catch (Exception ex)
@@ -99,10 +112,9 @@ public class BandedWaveguideNote
    * Plays a single drum hit, given the paramaters to control the Karplus-Strong algorithm
    * @param params WaveguideParameters[] the parameters for each single banded waveguide
    * @param fundimentalFrequency double the fundimental for the note, used to work out length of random values / sampled values to initialise delay lines
-   * @param amplitude double the peak amplitude of the hit in dB
    */
    
-   public void playNote(WaveguideParameters[] params, double fundimentalFrequency, double amplitude)
+   public void playNote(WaveguideParameters[] params, double fundimentalFrequency) throws IOException
    {
      // Check inputs
      if(params.length != numSingleWaveguides)
@@ -114,50 +126,60 @@ public class BandedWaveguideNote
      
      lineOut.stop();
      
-     // Work out delay length for longest delay line
-     int numSamples = (int) (samplingRate / fundimentalFrequency);
+     FloatSample[] floatSamples = new FloatSample[numSingleWaveguides]; // FloatSample for each initial input
+     float[] initialWaveTable = null;   // Float version of each initial input
+
+     // Work out delay length for the longest delay line
+     int maxNumSamples = (int) (samplingRate / fundimentalFrequency);
      
      // If no initialData given, use random numbers
-     float[] initialWaveTable;
      if(initialData == null)
      {
-       
        // Generate random numbers in the range -1 to 1.
-       initialWaveTable = generateRandomNumbers(numSamples, -1, 1);
+       initialWaveTable = generateRandomNumbers(maxNumSamples, -1, 1);
+     }
+     // Else set the initial wave table to the supplied data, only using the the first N samples
+     else
+     {
+       initialWaveTable = new float[maxNumSamples];
        
-       // Compute the average of the random numbers
-       float average = computeAverage(initialWaveTable);
+       for(int i=0; i<maxNumSamples; i++)
+       {
+         initialWaveTable[i] = (float) (initialData[i]);
+       }
+     }
+     
+     // Give each initial evaluator the right size of random value or sample data
+     for(int i=0; i<numSingleWaveguides; i++)
+     {
+       // Get length of delay lines for this delay
+       int numSamples = (int) (samplingRate / params[i].getCenterFrequency());
        
        // Take away the average from each number to ensure the values will have a 0 mean
        // This ensures the sound eventually dies away 
        // Also scale the random numbers for the chosen amplitude
        
-       for (int i=0; i<numSamples; i++)
+       float[] data = new float[numSamples]; 
+       for (int j=0; j<numSamples; j++)
        {
-         initialWaveTable[i] -= average;
-         initialWaveTable[i] *= amplitude;
-       }
-     }
-     // Else set the initial wave table to the supplied data, only using the the first N samples
-     else
-     {
-       initialWaveTable = new float[numSamples];
+         data[j] = (float) (initialWaveTable[j] * params[i].getAmplitude());  // Multiply by amplitude set for this frequency (delay line)
+       } 
        
-       for(int i=0; i<numSamples; i++)
-       {
-         initialWaveTable[i] = (float) (initialData[i] * 100 * amplitude);
-       }
+       // Set as FloatSample
+       floatSamples[i] = new FloatSample(data);
+       
      }
-     
-     // Create FloatSample to initialise delay line
-     FloatSample floatSample = new FloatSample(initialWaveTable);
      
      // Set up parameters in the banded waveguides
      bandedWaveguide.playNote(params);
      
-     // Queue the initial values into the initial evaluator to fill the delay line
-     initialInput.dataQueue.clear();
-     initialInput.dataQueue.queue(floatSample, 0, numSamples);
+     // Queue the initial values into the initial evaluators to fill the delay line
+     
+     for(int i=0; i<numSingleWaveguides; i++)
+     {
+       initialInput[i].dataQueue.clear();
+       initialInput[i].dataQueue.queue(floatSamples[i], 0, floatSamples[i].getNumFrames());
+     }
      
      // Start the processing to play sound
      lineOut.start();

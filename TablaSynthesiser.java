@@ -52,6 +52,7 @@ public class TablaSynthesiser implements IAudioPlayer
 //  private KarplusStrongNote lowRimSynth;
 
   private BandedWaveguideNote hiCenterSynth;
+  private BandedWaveguideNote lowCenterSynth;
   
   private double hiFrequencyRange;
   private double lowFrequencyRange;
@@ -72,12 +73,13 @@ public class TablaSynthesiser implements IAudioPlayer
   {
     // Initialise and start synthesizer with a line out
     synth = JSyn.createSynthesizer();
-    synth.getAudioDeviceManager().setSuggestedOutputLatency( 0.04 );
+    //synth.getAudioDeviceManager().setSuggestedOutputLatency( 0.04 );
     synth.start();
     synth.add(lineOut = new LineOut());
 
     // Initialise drum synthesisers
-    hiCenterSynth = new BandedWaveguideNote(synth, lineOut, 3, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_TABLA));
+    hiCenterSynth = new BandedWaveguideNote(synth, lineOut, 6, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_TABLA));
+    //lowCenterSynth = new BandedWaveguideNote(synth, lineOut, 5, null);
     //lowCenterSynth = new KarplusStrongNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_TABLA));
     //hiRimSynth = new KarplusStrongNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_RIM));
     //lowRimSynth = new KarplusStrongNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_RIM));
@@ -143,9 +145,19 @@ public class TablaSynthesiser implements IAudioPlayer
       }
       else
       {
-        double frequency = LOWEST_FREQUENCY_LOW + (lowFrequencyRange * ((double) note/127));
-        double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
+        //double frequency = LOWEST_FREQUENCY_LOW + (lowFrequencyRange * ((double) note/127));
+        //double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
         //lowCenterSynth.playNote(frequency, amplitude, duration, 60);
+//        lowCenterSynth.playNote(
+//          new WaveguideParameters[] {
+//            new WaveguideParameters(124, 10.0, 20, 1.0),
+//            new WaveguideParameters(558, 5.4, 20, 1.0),
+//            new WaveguideParameters(1251, 4.2, 20, 1.0),
+//            new WaveguideParameters(1728, 2.7, 20, 1.0),
+//            new WaveguideParameters(3728, 2.8, 20, 1.0)
+//          },
+//          124
+//        );
       }
     }
     catch(Exception ex)
@@ -178,17 +190,18 @@ public class TablaSynthesiser implements IAudioPlayer
       }
       else
       {
-        double frequency = LOWEST_FREQUENCY_HI + (hiFrequencyRange * ((double) note/127));
-        double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
-        //hiCenterSynth.playNote(frequency, amplitude, duration, 60);
+        //double frequency = LOWEST_FREQUENCY_HI + (hiFrequencyRange * ((double) note/127));
+        //double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
         hiCenterSynth.playNote(
           new WaveguideParameters[] {
-            new WaveguideParameters(940, 0.67, 4, 1.0),
-            new WaveguideParameters(940, 0.54, 2, 0.8),
-            new WaveguideParameters(940, 0.5, 2, 0.7)
+            new WaveguideParameters(417, 4.4, 20, 0.95),
+            new WaveguideParameters(699, 10.0, 20, 1.0),
+            new WaveguideParameters(1299, 10.0, 20, 1.0),
+            new WaveguideParameters(1725, 9.4, 20, 1.0),
+            new WaveguideParameters(2563, 8.8, 20, 1.0),
+            new WaveguideParameters(3934, 8.4, 20, 1.0)
           },
-          940,
-          amplitude
+          417
         );
       }
     }
@@ -215,7 +228,7 @@ public class TablaSynthesiser implements IAudioPlayer
     
     for(int i=0; i<sample.getNumFrames(); i++)
     {
-      doubleTable[i] = (float) sample.readDouble(i);
+      doubleTable[i] = (float) (sample.readDouble(i) * 100);
     }
     return doubleTable;
   }

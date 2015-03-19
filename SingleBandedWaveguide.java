@@ -84,11 +84,9 @@ public class SingleBandedWaveguide extends Circuit
    */
 
   public void playNote(WaveguideParameters waveguideParameters)
-  {
-    
-    
+  {  
     // Work out the length of the delay line, and the allpass coefficients from the frequency 
-    
+
     double frequency = waveguideParameters.getCenterFrequency();
     double loop = samplingRate / frequency;
     int delayLength = (int) loop;
@@ -96,7 +94,7 @@ public class SingleBandedWaveguide extends Circuit
     double coefficient = (1-fractionalDelay)/(1+fractionalDelay);
     allpass1.setCoefficient(coefficient);
     allpass2.setCoefficient(coefficient);
-    
+
     // Allocate new delay length
     buffer.allocate(delayLength, delayLength);
 
@@ -125,3 +123,4 @@ public class SingleBandedWaveguide extends Circuit
     pitchBendController.startBend(f1, f2, duration);
   }
 }
+
