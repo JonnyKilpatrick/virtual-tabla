@@ -38,18 +38,12 @@ public class TablaSynthesiser implements IAudioPlayer
   /**************************************************************************************************/
   //
   /* Instance variables 
-   //
+  //
   /**************************************************************************************************/
 
   // JSyn Unit Generators
   private Synthesizer synth;     // JSyn synthesizer
   private LineOut lineOut;       // Output
-  
-  // Drum synthesisers
-//  private KarplusStrongNote hiCenterSynth;
-//  private KarplusStrongNote hiRimSynth;
-//  private KarplusStrongNote lowCenterSynth;
-//  private KarplusStrongNote lowRimSynth;
 
   private BandedWaveguideNote hiCenterSynth;
   private BandedWaveguideNote lowCenterSynth;

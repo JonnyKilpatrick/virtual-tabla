@@ -27,7 +27,7 @@ public class BandedWaveguideNote
   
   // JSyn Unit Generators  
   private Synthesizer synth;                           // JSyn synthesizer
-  private LineOut lineOut;                             // Output
+  private UnitGenerator lineOut;                       // Output
   private FixedRateMonoReader[] initialInput;          // Array of evaluators to initialise the delay line with values
   private FullBandedWaveguide bandedWaveguide;         // BandedWaveguide
   private float[] initialData;  
@@ -46,11 +46,11 @@ public class BandedWaveguideNote
   /**
    * Class constructor
    * @param synth Synthesiser
-   * @param lineOut LineOut
+   * @param lineOut UnitGenerator
    * @param numSingleWaveguides int the number of delay lines used in the Banded waveguide
    * @param initialData double[] initial samples to input to the banded waveguide, set to null to initialise with random values
    */
-  public BandedWaveguideNote(Synthesizer synth, LineOut lineOut, int numSingleWaveguides, float[] initialData)
+  public BandedWaveguideNote(Synthesizer synth, UnitGenerator lineOut, int numSingleWaveguides, float[] initialData)
   {
     // Setup
     try
@@ -90,8 +90,15 @@ public class BandedWaveguideNote
       }
       
       // Connect output of banded waveguides to lineout
-      bandedWaveguide.output.connect(0, lineOut.input, 0);
-      bandedWaveguide.output.connect(0, lineOut.input, 1);
+      if(lineOut instanceof LineOut)
+      { 
+        bandedWaveguide.output.connect(0, ((LineOut)lineOut).input, 0);
+        bandedWaveguide.output.connect(0, ((LineOut)lineOut).input, 1);
+      }
+      else if(lineOut instanceof CaptureOutput)
+      {
+        bandedWaveguide.output.connect(0, ((CaptureOutput)lineOut).input, 0);
+      }
     }
     // Handle errors
     catch (Exception ex)

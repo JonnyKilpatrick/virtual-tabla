@@ -22,6 +22,7 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
   //
   /**************************************************************************************************/
   
+  // Bit Strings
   private static final int TOTAL_STRING_LENGTH = 72;
   private static final int FREQUENCY_INT_BITS = 13;
   private static final int FREQUENCY_FRAC_BITS = 8;
@@ -30,6 +31,10 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
   private static final int AMP_FRAC_BITS = 16;
   private static final int GAIN_FRAC_BITS = 16;
   
+  // Spectrogram settings
+  private static final int WINDOW_SIZE = 256;
+  private static final int SAMPLES_STEP = 128;
+  
   
   /**************************************************************************************************/
   //
@@ -37,8 +42,16 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
   //
   /**************************************************************************************************/
 
-  private int numWaveguides;
-  private double[] targetSamples;
+  // JSyn unit gens
+  private Synthesizer synth;
+  private CaptureOutput output;
+
+  private int numWaveguides;                     // Number of waveguides in the banded waveguide synthesiser
+  private double[][] targetSpectrogram;          // The spectrogram of the target sound to compare aggainst
+  
+  private BandedWaveguideNote bandedWaveguide;   // Waveguide to simulate the synthesis
+  
+  private Spectrogram spectrogram;               // Class to compute spectrogram   
   
   /**************************************************************************************************/
   //
@@ -47,21 +60,30 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
   /**************************************************************************************************/
   /**
    * Class constructor
-   * @param coeffient double the coeffient for the allpass filter
+   * @param numWaveguides int the number of waveguides in the banded waveguide
+   * @param targetAudioFilePath String the path to the audio file to target
    */
    
   public WaveguideFitnessEvaluator(int numWaveguides, String targetAudioFilePath) throws IOException
   {
     this.numWaveguides = numWaveguides;
-    this.targetSamples = readAudioFromFile(targetAudioFilePath);
+    double[] targetSound = readAudioFromFile(targetAudioFilePath);
+    
+    // Initialise synthesizer
+    synth = JSyn.createSynthesizer();
+    synth.setRealTime(false);  // Set not real time  
+    synth.add(output = new CaptureOutput(targetSound.length));
+    
+    // Set up BandedWaveguide
+    bandedWaveguide = new BandedWaveguideNote(synth, output, numWaveguides, null);
+    
+    // Set up spectrogram object to compute the spectrogram
+    spectrogram = new Spectrogram(WINDOW_SIZE, SAMPLES_STEP);
+    
+    // Compute the spectrogram of the target sound, ready to be compared aggainst
+    targetSpectrogram = spectrogram.spectrogram(targetSound);
+    
   }
-  
-  public static void main(String[] args)
-  {
-    WaveguideFitnessEvaluator e = new WaveguideFitnessEvaluator(1, "C:/Users/Jon/Documents/Computer Science/Third Year/Dissertation/Code/VirtualTablaSynthesiser/Samples/High/21_14_01.AIF");
-    e.getFitness(new BitString(72, new Random()), null);
-  }
-  
   
   /**************************************************************************************************/
   //
@@ -84,7 +106,55 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
     {
       System.out.println(parameters[i].getCenterFrequency() + ", " + parameters[i].getAmplitude() + ", " + parameters[i].getQ() + ", " + parameters[i].getGain());
     }
-    return 0;
+    
+    // Synthesise sound to produce the samples
+    double fundimentalFreq = parameters[0].getCenterFrequency();
+ 
+    for(int i=1; i<numWaveguides; i++)
+    {
+      double freq = parameters[i].getCenterFrequency(); 
+      if(freq < fundimentalFreq)
+      {
+        fundimentalFreq = freq;
+      }
+    }
+   
+    // Set the note to play
+    synth.start();
+    
+    try
+    {
+      bandedWaveguide.playNote(parameters, fundimentalFreq);
+    }
+    catch(Exception ex)
+    {
+    }
+    
+    // Keep checking the output, wait until it has recieved the correct number of samples
+    while(output.isDataCaptured() != true)
+    {
+      try
+      {
+        Thread.sleep(100);
+      }
+      catch(Exception ex)
+      {
+      }
+    }
+    
+    // Once data is captured, stop synthesiser
+    synth.stop();
+    output.resetData();
+    
+    // Get data synthesised
+    double[] synthesisedSound = output.getData();
+    
+    // Compute spectrom of the synthesised sound
+    double[][] candidateSpectrogram = spectrogram.spectrogram(synthesisedSound);
+    
+    // Return the distance between the two spectrograms
+    
+    return Spectrogram.distance(targetSpectrogram, candidateSpectrogram);
   }
    
   /**************************************************************************************************/
@@ -220,7 +290,7 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
       System.out.println(result[i] + " : " + data[i]);
     }
     
-    return data;
+    return result;
   }
   
 }
