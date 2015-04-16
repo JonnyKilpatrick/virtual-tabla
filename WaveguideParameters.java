@@ -38,7 +38,7 @@ public class WaveguideParameters
   {
     this.centerFrequency = centerFrequency;
     this.amplitude = amplitude;
-    this.q = centerFrequency / bandwidth;
+    this.q = bandwidth;
     this.gain = gain;;
   }
   
@@ -119,3 +119,4 @@ public class WaveguideParameters
     this.gain = gain;
   }  
 }
+

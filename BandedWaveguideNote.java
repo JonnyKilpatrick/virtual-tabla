@@ -1,4 +1,3 @@
-import processing.core.*;
 import com.jsyn.*;
 import com.jsyn.data.*;
 import com.jsyn.unitgen.*;
@@ -30,7 +29,7 @@ public class BandedWaveguideNote
   private UnitGenerator lineOut;                       // Output
   private FixedRateMonoReader[] initialInput;          // Array of evaluators to initialise the delay line with values
   private FullBandedWaveguide bandedWaveguide;         // BandedWaveguide
-  private float[] initialData;  
+  private OutputGain outputGain;                       // Overall output volume control
   
   // Waveguide parameters
   private int samplingRate;
@@ -48,9 +47,8 @@ public class BandedWaveguideNote
    * @param synth Synthesiser
    * @param lineOut UnitGenerator
    * @param numSingleWaveguides int the number of delay lines used in the Banded waveguide
-   * @param initialData double[] initial samples to input to the banded waveguide, set to null to initialise with random values
    */
-  public BandedWaveguideNote(Synthesizer synth, UnitGenerator lineOut, int numSingleWaveguides, float[] initialData)
+  public BandedWaveguideNote(Synthesizer synth, UnitGenerator lineOut, int numSingleWaveguides)
   {
     // Setup
     try
@@ -58,7 +56,6 @@ public class BandedWaveguideNote
       this.synth = synth;
       this.lineOut = lineOut;
       this.numSingleWaveguides = numSingleWaveguides;
-      this.initialData = initialData;
 
       lineOut.stop();
       
@@ -71,8 +68,13 @@ public class BandedWaveguideNote
       // Create banded waveguide
       bandedWaveguide = new FullBandedWaveguide(samplingRate, MAX_BUFFER_SIZE, numSingleWaveguides);
       
-      // Add banded waveguide to synthesiser
+      // Create output gain
+      outputGain = new OutputGain();
+      
+      // Add units to synthesiser
       synth.add(bandedWaveguide);
+      synth.add(outputGain);
+      
       
       for(int i=0; i<numSingleWaveguides; i++)
       {
@@ -89,15 +91,18 @@ public class BandedWaveguideNote
         bandedWaveguide.output.connect(0, bandedWaveguide.inputs[i], 0);
       }
       
-      // Connect output of banded waveguides to lineout
+      // Connect output of banded waveguide to the overall output gain
+      bandedWaveguide.output.connect(0, outputGain.input, 0);
+      
+      // Connect output of output gain to lineout or to the capture output, depending on what the lineOut object is
       if(lineOut instanceof LineOut)
       { 
-        bandedWaveguide.output.connect(0, ((LineOut)lineOut).input, 0);
-        bandedWaveguide.output.connect(0, ((LineOut)lineOut).input, 1);
+        outputGain.output.connect(0, ((LineOut)lineOut).input, 0);
+        outputGain.output.connect(0, ((LineOut)lineOut).input, 1);
       }
       else if(lineOut instanceof CaptureOutput)
       {
-        bandedWaveguide.output.connect(0, ((CaptureOutput)lineOut).input, 0);
+        outputGain.output.connect(0, ((CaptureOutput)lineOut).input, 0);
       }
     }
     // Handle errors
@@ -119,14 +124,19 @@ public class BandedWaveguideNote
    * Plays a single drum hit, given the paramaters to control the Karplus-Strong algorithm
    * @param params WaveguideParameters[] the parameters for each single banded waveguide
    * @param fundimentalFrequency double the fundimental for the note, used to work out length of random values / sampled values to initialise delay lines
+   * @param gain double the overall volume booster / reducer. (<1 for reduce and >1 for boost, 0 = silence)
    */
    
-   public void playNote(WaveguideParameters[] params, double fundimentalFrequency) throws IOException
+   public void playNote(WaveguideParameters[] params, double fundimentalFrequency, double gain) throws IOException
    {
      // Check inputs
      if(params.length != numSingleWaveguides)
      {
        throw new IllegalArgumentException("Can't play note! Number of waveguide parameters supplied must be equal to the number of delay lines");
+     }
+     if(gain < 0)
+     {
+       throw new IllegalArgumentException("Gain must be greater than or equal to 0!");
      }
      
      this.fundimentalFrequency = fundimentalFrequency;
@@ -139,43 +149,33 @@ public class BandedWaveguideNote
      // Work out delay length for the longest delay line
      int maxNumSamples = (int) (samplingRate / fundimentalFrequency);
      
-     // If no initialData given, use random numbers
-     if(initialData == null)
-     {
-       // Generate random numbers in the range -1 to 1.
-       initialWaveTable = generateRandomNumbers(maxNumSamples, -1, 1);
-     }
-     // Else set the initial wave table to the supplied data, only using the the first N samples
-     else
-     {
-       initialWaveTable = new float[maxNumSamples];
-       
-       for(int i=0; i<maxNumSamples; i++)
-       {
-         initialWaveTable[i] = (float) (initialData[i]);
-       }
-     }
-     
-     // Give each initial evaluator the right size of random value or sample data
+    
+     // Give each initial evaluator the right size of values
      for(int i=0; i<numSingleWaveguides; i++)
      {
        // Get length of delay lines for this delay
        int numSamples = (int) (samplingRate / params[i].getCenterFrequency());
-       
-       // Take away the average from each number to ensure the values will have a 0 mean
-       // This ensures the sound eventually dies away 
-       // Also scale the random numbers for the chosen amplitude
-       
+
+       // Scale the random numbers for the chosen amplitude
+       // Alternatve between - and + amplitude      
        float[] data = new float[numSamples]; 
        for (int j=0; j<numSamples; j++)
        {
-         data[j] = (float) (initialWaveTable[j] * params[i].getAmplitude());  // Multiply by amplitude set for this frequency (delay line)
-       } 
+         double flipper = 1;
+         if(j/2 != 0)
+         {
+           flipper = -1;
+         }
+         
+         data[j] = (float) (params[i].getAmplitude() * flipper);
+       }
        
        // Set as FloatSample
        floatSamples[i] = new FloatSample(data);
-       
      }
+     
+     // Set overall volume control
+     outputGain.gain.set(gain);
      
      // Set up parameters in the banded waveguides
      bandedWaveguide.playNote(params);
@@ -244,8 +244,9 @@ public class BandedWaveguideNote
   * @param slideDuration double the duration of the pitch bend in seconds   
   */
    
-   public void pitchBend(double frequencyPointer2, double slideDuration)
-   {    
-     bandedWaveguide.pitchBend(fundimentalFrequency, frequencyPointer2, slideDuration);
-   }
+  public void pitchBend(double frequencyPointer2, double slideDuration)
+  {    
+    bandedWaveguide.pitchBend(fundimentalFrequency, frequencyPointer2, slideDuration);
+  }
 }
+

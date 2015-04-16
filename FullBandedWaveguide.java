@@ -49,7 +49,7 @@ public class FullBandedWaveguide extends Circuit
     // Output of circuit is the output of the mixer
     output = mixer.output;
     
-    // Create an input for eacg waveguide
+    // Create an input for each waveguide
     inputs = new UnitInputPort[numSingleWaveguides];
     
     // Create desired number of Single banded waveguides
@@ -106,9 +106,12 @@ public class FullBandedWaveguide extends Circuit
    
   public void pitchBend(double f1, double f2, double duration)
   {
+    // Get the distance between the two frequencies
+    double frequencyChange = f1 - f2;
+    
     for(SingleBandedWaveguide s : waveguides)
     {
-      s.pitchBend(f1, f2, duration);
+      s.pitchBend(frequencyChange, duration);
     }
   }
 

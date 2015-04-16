@@ -1,9 +1,12 @@
 import org.uncommons.maths.binary.BitString;
 import org.uncommons.watchmaker.framework.FitnessEvaluator;
+
 import java.util.List;
 import java.util.Random;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+
 import com.jsyn.*;
 import com.jsyn.data.*;
 import com.jsyn.unitgen.*;
@@ -30,10 +33,15 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
   private static final int Q_FRAC_BITS = 8;
   private static final int AMP_FRAC_BITS = 16;
   private static final int GAIN_FRAC_BITS = 16;
+  private static final int VOLUME_INT_BITS = 6;
+  private static final int VOLUME_FRAC_BITS = 8;
   
   // Spectrogram settings
-  private static final int WINDOW_SIZE = 256;
+  private static final int WINDOW_SIZE = 512;
   private static final int SAMPLES_STEP = 128;
+  
+  // Sample rate
+  private static final int SAMPLE_RATE = 44100;
   
   
   /**************************************************************************************************/
@@ -44,14 +52,13 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
 
   // JSyn unit gens
   private Synthesizer synth;
+  private BandedWaveguideNote bandedWaveguide;
   private CaptureOutput output;
 
-  private int numWaveguides;                     // Number of waveguides in the banded waveguide synthesiser
-  private double[][] targetSpectrogram;          // The spectrogram of the target sound to compare aggainst
-  
-  private BandedWaveguideNote bandedWaveguide;   // Waveguide to simulate the synthesis
-  
-  private Spectrogram spectrogram;               // Class to compute spectrogram   
+  private Spectrogram spectrogram;         // Spectrogram calculator
+  private int numWaveguides;                     // Number of waveguides in the synthesiser
+  private double[][] targetSpectrogram;          // The spectrogram of the target sound to compare against
+  private int targetSoundLength;         // Number of samples in the target audio file
   
   /**************************************************************************************************/
   //
@@ -68,21 +75,25 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
   {
     this.numWaveguides = numWaveguides;
     double[] targetSound = readAudioFromFile(targetAudioFilePath);
-    
-    // Initialise synthesizer
-    synth = JSyn.createSynthesizer();
-    synth.setRealTime(false);  // Set not real time  
-    synth.add(output = new CaptureOutput(targetSound.length));
-    
-    // Set up BandedWaveguide
-    bandedWaveguide = new BandedWaveguideNote(synth, output, numWaveguides, null);
+    targetSoundLength = targetSound.length;
     
     // Set up spectrogram object to compute the spectrogram
     spectrogram = new Spectrogram(WINDOW_SIZE, SAMPLES_STEP);
     
-    // Compute the spectrogram of the target sound, ready to be compared aggainst
+    // Compute the spectrogram of the target sound, ready to be compared against
     targetSpectrogram = spectrogram.spectrogram(targetSound);
     
+    // Set up Synthesizer to simulate sound
+    // Initialise synthesizer
+    synth = JSyn.createSynthesizer();
+    synth.setRealTime(false);  // Set not real time 
+    
+    // Set up BandedWaveguide
+    synth.add(output = new CaptureOutput(targetSoundLength));
+    bandedWaveguide = new BandedWaveguideNote(synth, output, numWaveguides);  
+    
+    // Start synth
+    synth.start();
   }
   
   /**************************************************************************************************/
@@ -98,18 +109,16 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
    */
 
   public double getFitness(BitString candidate, List<? extends BitString> population)
-  {
+  { 
     // Convert binary representation to the parameters needed
     WaveguideParameters[] parameters = convertToParameters(candidate.toString());
     
-    for(int i=0; i<numWaveguides; i++)
-    {
-      System.out.println(parameters[i].getCenterFrequency() + ", " + parameters[i].getAmplitude() + ", " + parameters[i].getQ() + ", " + parameters[i].getGain());
-    }
+    // Also get the overall gain from the binary string
+    double overallGain = convertToOverallGain(candidate.toString());
     
     // Synthesise sound to produce the samples
     double fundimentalFreq = parameters[0].getCenterFrequency();
- 
+
     for(int i=1; i<numWaveguides; i++)
     {
       double freq = parameters[i].getCenterFrequency(); 
@@ -118,43 +127,55 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
         fundimentalFreq = freq;
       }
     }
+    
+    if(fundimentalFreq < 100)
+    {
+      System.out.println(100);
+      return 100;
+    }
    
     // Set the note to play
-    synth.start();
+    output.resetData();
     
+/*    System.out.println("Candidate: (Gain: " + overallGain + ")");
+    for(int i=0; i<numWaveguides; i++)
+    {
+      System.out.println(parameters[i].getCenterFrequency() + ", " + parameters[i].getAmplitude() + ", " + parameters[i].getQ() + ", " + parameters[i].getGain());
+    }
+    System.out.println();*/
+
     try
     {
-      bandedWaveguide.playNote(parameters, fundimentalFreq);
+      bandedWaveguide.playNote(parameters, fundimentalFreq, overallGain);
     }
     catch(Exception ex)
     {
+      return 100;
     }
     
-    // Keep checking the output, wait until it has recieved the correct number of samples
-    while(output.isDataCaptured() != true)
+    try {
+      synth.sleepFor(targetSoundLength / SAMPLE_RATE);
+    } 
+    catch (InterruptedException e) 
     {
-      try
-      {
-        Thread.sleep(100);
-      }
-      catch(Exception ex)
-      {
-      }
     }
-    
-    // Once data is captured, stop synthesiser
-    synth.stop();
-    output.resetData();
-    
+
     // Get data synthesised
     double[] synthesisedSound = output.getData();
     
-    // Compute spectrom of the synthesised sound
+    // Once data is captured, stop synthesiser
+    output.stop();
+    output.resetData();
+    
+    // Compute spectrum of the synthesised sound
     double[][] candidateSpectrogram = spectrogram.spectrogram(synthesisedSound);
     
-    // Return the distance between the two spectrograms
+    double dist = Spectrogram.distance(targetSpectrogram, candidateSpectrogram);
     
-    return Spectrogram.distance(targetSpectrogram, candidateSpectrogram);
+    System.out.println(dist);
+    
+    // Return the distance between the two spectrograms  
+    return dist;
   }
    
   /**************************************************************************************************/
@@ -182,7 +203,7 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
    * @return WaveguideParameters[] an array of the parameters for each waveguide in the banded waveguides
    */
    
-  private WaveguideParameters[] convertToParameters(String bitString)
+  public WaveguideParameters[] convertToParameters(String bitString)
   {
     // Initialise array
     WaveguideParameters[] params = new WaveguideParameters[numWaveguides];
@@ -192,27 +213,27 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
     {
       
       // Get the corresponding set of bits for this waveguide from the whole string
-      String bits = bitString.substring((i*TOTAL_STRING_LENGTH), ((i+1)*TOTAL_STRING_LENGTH)-1);
+      String bits = bitString.substring((i*TOTAL_STRING_LENGTH), ((i+1)*TOTAL_STRING_LENGTH));
       
       // Get centre frequency
       double frequency = fixedPointBinaryToDouble(
-        bits.substring(0, FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS - 1), 
+        bits.substring(0, FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS), 
         FREQUENCY_INT_BITS, 
         FREQUENCY_FRAC_BITS);
       
       // Get bandwidth
       double bandwidth = fixedPointBinaryToDouble(
-        bits.substring(FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS, FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS + Q_INT_BITS + Q_FRAC_BITS - 1), 
+        bits.substring(FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS, FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS + Q_INT_BITS + Q_FRAC_BITS), 
         Q_INT_BITS, 
         Q_FRAC_BITS);
       
       double amplitude = fixedPointBinaryToDouble(
-        bits.substring(FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS + Q_INT_BITS + Q_FRAC_BITS, FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS + Q_INT_BITS + Q_FRAC_BITS + AMP_FRAC_BITS - 1), 
+        bits.substring(FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS + Q_INT_BITS + Q_FRAC_BITS, FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS + Q_INT_BITS + Q_FRAC_BITS + AMP_FRAC_BITS), 
         0, 
         AMP_FRAC_BITS);
         
       double gain = fixedPointBinaryToDouble(
-        bits.substring(FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS + Q_INT_BITS + Q_FRAC_BITS + AMP_FRAC_BITS, FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS + Q_INT_BITS + Q_FRAC_BITS + AMP_FRAC_BITS + GAIN_FRAC_BITS - 1), 
+        bits.substring(FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS + Q_INT_BITS + Q_FRAC_BITS + AMP_FRAC_BITS, FREQUENCY_INT_BITS + FREQUENCY_FRAC_BITS + Q_INT_BITS + Q_FRAC_BITS + AMP_FRAC_BITS + GAIN_FRAC_BITS), 
         0, 
         GAIN_FRAC_BITS);
         
@@ -221,6 +242,30 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
     }
     
     return params;
+  }
+  
+  /**************************************************************************************************/
+  //
+  /* convertToOverallGain 
+  //
+  /**************************************************************************************************/
+  /**
+   * Gets the overall gain from the binary string
+   * @return double the overall gain
+   */
+   
+  public double convertToOverallGain(String bitString)
+  { 
+    // Get the corresponding set of bits for this waveguide from the whole string
+    String bits = bitString.substring((numWaveguides*TOTAL_STRING_LENGTH), ((numWaveguides*TOTAL_STRING_LENGTH)+VOLUME_INT_BITS+VOLUME_FRAC_BITS));
+      
+    // Convert from binary to decimal
+    double volume = fixedPointBinaryToDouble(
+      bits, 
+      VOLUME_INT_BITS, 
+      VOLUME_FRAC_BITS
+    );
+    return volume;
   }
   
   /**************************************************************************************************/
@@ -267,7 +312,7 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
   //
   /**************************************************************************************************/
   /**
-   * Converts fixed point binary string to double
+   * Reads in the audio samples from the given file.
    * @param filePath String the path of the target audio file sample
    * @return double[] the sample data from the file
    */
@@ -287,10 +332,10 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
     for(int i=0; i<data.length; i++)
     {
       result[i] = (double) data[i];
-      System.out.println(result[i] + " : " + data[i]);
     }
     
     return result;
   }
   
 }
+

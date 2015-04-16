@@ -72,11 +72,11 @@ public class TablaSynthesiser implements IAudioPlayer
     synth.add(lineOut = new LineOut());
 
     // Initialise drum synthesisers
-    hiCenterSynth = new BandedWaveguideNote(synth, lineOut, 6, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_TABLA));
+    hiCenterSynth = new BandedWaveguideNote(synth, lineOut, 5);
     //lowCenterSynth = new BandedWaveguideNote(synth, lineOut, 5, null);
-    //lowCenterSynth = new KarplusStrongNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_TABLA));
-    //hiRimSynth = new KarplusStrongNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + HIGH_RIM));
-    //lowRimSynth = new KarplusStrongNote(synth, lineOut, null);//readSamplesFromFile(parent.sketchPath("") + LOW_RIM));
+    //lowCenterSynth = new KarplusStrongNote(synth, lineOut, null);
+    //hiRimSynth = new KarplusStrongNote(synth, lineOut, null);
+    //lowRimSynth = new KarplusStrongNote(synth, lineOut, null);
     
     // Work out frequency ranges
     hiFrequencyRange = HIGHEST_FREQUENCY_HI - LOWEST_FREQUENCY_HI;
@@ -165,7 +165,7 @@ public class TablaSynthesiser implements IAudioPlayer
    * Plays the right smaller drum samples given the note 
    * @param midi MidiMessage the midi message containing velocity 0-127 and 0-127 from the center of the drum to the rim
    */
-
+int ppp = 0;
   private void playHighDrum(MidiMessage midi)
   {
     // Split up drum into three sections and call the corresponding sample player
@@ -186,17 +186,54 @@ public class TablaSynthesiser implements IAudioPlayer
       {
         //double frequency = LOWEST_FREQUENCY_HI + (hiFrequencyRange * ((double) note/127));
         //double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
+//        hiCenterSynth.playNote(
+//          new WaveguideParameters[] {
+//            new WaveguideParameters(417, 0.44, 20, 0.95),
+//            new WaveguideParameters(699, 1, 20, 1.0),
+//            new WaveguideParameters(1299, 1, 20, 1.0),
+//            new WaveguideParameters(1725, 0.94, 20, 1.0),
+//            new WaveguideParameters(2563, 0.88, 20, 1.0),
+//            new WaveguideParameters(3934, 0.84, 20, 1.0)
+//          },
+//          417,
+//          30
+//        );
+
         hiCenterSynth.playNote(
           new WaveguideParameters[] {
-            new WaveguideParameters(417, 4.4, 20, 0.95),
-            new WaveguideParameters(699, 10.0, 20, 1.0),
-            new WaveguideParameters(1299, 10.0, 20, 1.0),
-            new WaveguideParameters(1725, 9.4, 20, 1.0),
-            new WaveguideParameters(2563, 8.8, 20, 1.0),
-            new WaveguideParameters(3934, 8.4, 20, 1.0)
+            new WaveguideParameters(1408.34375, 0.835357666015625, 434.421875, 0.827301025390625),
+            new WaveguideParameters(556.1328125, 0.736602783203125, 360.3515625, 0.3970947265625),
+            new WaveguideParameters(1742.421875, 0.551788330078125, 318.3046875, 0.923095703125),
+            new WaveguideParameters(697.1640625, 0.873443603515625, 136.1328125, 0.99505615234375),
+            new WaveguideParameters(1090.265625, 0.872802734375, 47.0390625, 0.900115966796875)
           },
-          417
+          556.1328125,
+          22.6953125
         );
+        if(ppp%3 == 0)
+        { 
+          try
+          {
+            Thread.sleep(250);
+          }
+          catch(Exception ex)
+          {
+          }
+          hiCenterSynth.pitchBend(550, 0.01);
+        }
+        ppp++;
+
+//        hiCenterSynth.playNote(
+//          new WaveguideParameters[] {
+//            new WaveguideParameters(1088.265625, 0.2078857421875, 1088.265625/1.1278094436168145, 0.12139892578125),
+//            new WaveguideParameters(3596.875, 0.760498046875, 3596.875/40.37533982285363, 0.25665283203125),
+//            new WaveguideParameters(141.03125, 0.449981689453125, 141.03125/0.23921022990790433, 0.250579833984375),
+//            new WaveguideParameters(3435.8359375, 0.892822265625, 3435.8359375/12.666311454163187, 0.96197509765625),
+//            new WaveguideParameters(132.03125, 0.84368896484375, 132.03125/0.7898672649093288, 0.705291748046875)
+//          },
+//          132.03125,
+//          2.5078125
+//        );
       }
     }
     catch(Exception ex)

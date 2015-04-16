@@ -27,12 +27,13 @@ public class PitchBendController extends UnitBinaryOperator
   private double frequencyPointer2;  // Frequency of second pointer
   private double frequencyStep;      // Size of each step that the read pointers jump
   private double totalSamplesOfBend; // Total number of samples for the pitch bend
+  private double numSteps;           // Total number of steps
   private double blendFactor;        // Used in the legato cross fade between pointers, blending from 0 to 1;
   private int count16;               // Counts up to 16, per the sample rate, where read pointers jump every 16 samples
   private int totalCount;            // Total number of samples into the pitch bend
   private boolean currentPointer;    // True when the current pointer being read from is pointer 1
   
-  // References to other unit gens
+  // References to other unit gens to control
   private CircularBuffer buffer;
   private AllpassFilter allpassFilterReader1;
   private AllpassFilter allpassFilterReader2;
@@ -68,7 +69,7 @@ public class PitchBendController extends UnitBinaryOperator
     blendFactor = 0;
     count16 = 0;
     totalCount = 0;
-    currentPointer = false;
+    currentPointer = true;
   }
   
   /**************************************************************************************************/
@@ -92,21 +93,19 @@ public class PitchBendController extends UnitBinaryOperator
      // (16 samples between sending each new fractional delay length value to the readers)
      // Round down to an integer
      totalSamplesOfBend = (int) (samplingRate * duration);
-     int numSteps = (int) (totalSamplesOfBend / 16); 
+     numSteps = (int) (totalSamplesOfBend / 16); 
      
      // Work out what the resulting change in frequency is for each step
+     // * 2 because each pointer moves alternatly so must move twice the actual frequency step each time
      frequencyStep = 2 * ((frequencyPointer2 - frequencyPointer1) / numSteps);
      
-     // Now set pointer2 to it's initial position
-     frequencyPointer2 = frequencyPointer1;
+     // Set the frequencyPointer2 to be half a step away in the wrong direction so that the second move will move it ahead of the first
+     frequencyPointer2 = frequencyPointer1 - (0.5 * frequencyStep);
      
      // Move position of second readPointer
      double delay = samplingRate / frequencyPointer2;
      int intPart = (int) delay;
      buffer.setPointer2Delay(intPart);
-     
-     // Set the frequencyPointer1 to be half a step away in the wrong direction so that the first move will move it ahead of the second
-     frequencyPointer1 = frequencyPointer1 - (0.5 * frequencyStep);
      
      // Set the coefficient of the second allpass interpolated readpointer
      double fracPart = delay - intPart;
@@ -142,14 +141,11 @@ public class PitchBendController extends UnitBinaryOperator
      
       if(pitchBend == true)
       {
-        // Flip current pointer
-        currentPointer = !currentPointer;
-         
         // If count is 0, 16 samples have passed to alter delay length
         if(count16 == 0)
-        {              
+        {            
           // Update the frequency of the current pointer, update corresponding read pointer, update coefficient for allpass filter
-          if(currentPointer == false)
+          if(currentPointer == true)
           {
             frequencyPointer2 += frequencyStep;
             double delay = samplingRate / frequencyPointer2;
@@ -178,10 +174,6 @@ public class PitchBendController extends UnitBinaryOperator
           blendFactor = (count16 - 5) / 11;
         }
           
-        // Increment counts
-        count16 = (count16 + 1) % 16;
-        totalCount++;
-          
         // If totalCount is same as pitchBendTotalSamples, pitch bend is finished so reset variables
         if(totalCount >= totalSamplesOfBend)
         {
@@ -189,6 +181,15 @@ public class PitchBendController extends UnitBinaryOperator
           count16 = 0;
           totalCount = 0;
           blendFactor = 0;
+          
+          if(numSteps % 2 == 0)
+          {
+            currentPointer = false;
+          }
+          else
+          {
+            currentPointer = true;
+          }
         }
       } 
       // Get the two input samples
@@ -198,7 +199,7 @@ public class PitchBendController extends UnitBinaryOperator
       // Set the current pointer sample to interpolate from for the legato crossfade
       double firstSample = 0;
       double secondSample = 0;
-      if(currentPointer == false)
+      if(currentPointer == true)
       {
         firstSample = sample1;
         secondSample = sample2;
@@ -221,6 +222,17 @@ public class PitchBendController extends UnitBinaryOperator
       else
       {
         result = firstSample - (blendFactor * range);
+      }
+      
+      // If pitchbending and time to swap pointer, swap
+      if(pitchBend == true && count16 == 0)
+      { 
+        // Flip current pointer
+        currentPointer = !currentPointer;
+        
+        // Increment counts
+        count16 = (count16 + 1) % 16;
+        totalCount++;
       }
        
       // Output the result

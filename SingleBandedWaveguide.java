@@ -113,14 +113,13 @@ public class SingleBandedWaveguide extends Circuit
   /**************************************************************************************************/
   /**
    * Set the pitch bend controller to start bending
-   * @param f1 double initial frequency
-   * @param f2 double the frequency to pitch bend to
+   * @param frequencyChange double the +/- distance between the current frequency and the frequency to slide to
    * @param duration double the length of the pitch bend in time
    */
 
-  public void pitchBend(double f1, double f2, double duration)
+  public void pitchBend(double frequencyChange, double duration)
   {
-    pitchBendController.startBend(f1, f2, duration);
+    pitchBendController.startBend(frequency, frequency + frequencyChange, duration);
   }
 }
 

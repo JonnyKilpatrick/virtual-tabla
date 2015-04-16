@@ -1,3 +1,5 @@
+import java.util.Arrays;
+
 import com.jsyn.*;
 import com.jsyn.data.*;
 import com.jsyn.unitgen.*;
@@ -20,9 +22,9 @@ public class CaptureOutput extends UnitGenerator
   /**************************************************************************************************/
   
   public UnitInputPort input;      // The input
-  private double[] data;           // The captured data
+  private double[] incomingData;   // The incoming sample data
   private boolean isDataCaptured;  // Whether all the data has been captured
-  private int count;               // nunber of samples captured so far
+  private int count;               // Number of samples captured so far
   
   /**************************************************************************************************/
   //
@@ -38,7 +40,7 @@ public class CaptureOutput extends UnitGenerator
   {
     super();
     addPort(input = new UnitInputPort("Input"));
-    data = new double[outputSize];
+    incomingData = new double[outputSize];
     isDataCaptured = false;
     count = 0;
   }
@@ -63,31 +65,11 @@ public class CaptureOutput extends UnitGenerator
      
      for(int i=start; i<limit; i++)
      {
-       data[count] = inputs[i];
+       incomingData[count] = inputs[i];
        count++;
-       
-       if(count >= data.length)
-       {
-         isDataCaptured = true;
-         count=0;
-       }
      }
    }
    
-  /**************************************************************************************************/
-  //
-  /* isDataCaptured  
-  //
-  /**************************************************************************************************/
-  /**
-   * Whether all data has been captured
-   * @return boolean whether all the data is catpured (the synthesiser has finished this note)
-   */
-
-  public boolean isDataCaptured()
-  { 
-    return isDataCaptured; 
-  }
   
   /**************************************************************************************************/
   //
@@ -100,8 +82,11 @@ public class CaptureOutput extends UnitGenerator
    */
 
   public double[] getData()
-  { 
-    return data; 
+  {      
+    // Set the isDataCaptured boolean to false as we have now read the latest data
+    isDataCaptured = false;
+    
+    return incomingData; 
   }
   
   /**************************************************************************************************/
@@ -116,6 +101,9 @@ public class CaptureOutput extends UnitGenerator
   public void resetData()
   { 
     count = 0; 
+    incomingData = new double[incomingData.length];
+    isDataCaptured = false;
   }
   
 }
+

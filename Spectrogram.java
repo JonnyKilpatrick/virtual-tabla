@@ -154,11 +154,12 @@ public class Spectrogram
       }
       
       // Add one spectrum average distance to the totalDistance
-      totalDistance += totalDistanceN / spectrogram1[i].length;
+      totalDistance += totalDistanceN;// / spectrogram1[i].length;
     }
     
     // Return the average distance across the different windows in time
-    return totalDistance / spectrogram1.length;
+    return totalDistance;// / spectrogram1.length;
   }
   
 }
+
