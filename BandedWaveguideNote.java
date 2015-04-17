@@ -262,4 +262,3 @@ public class BandedWaveguideNote
     bandedWaveguide.pitchBend(fundimentalFrequency, frequencyPointer2, slideDuration);
   }
 }
-

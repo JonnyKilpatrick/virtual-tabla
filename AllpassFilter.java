@@ -2,6 +2,7 @@ import com.jsyn.*;
 import com.jsyn.data.*;
 import com.jsyn.unitgen.*;
 import com.jsyn.util.*;
+import com.jsyn.ports.UnitInputPort;
 
 /**
  * Implementation for an Allpass filter with a given coefficient.
@@ -17,9 +18,11 @@ public class AllpassFilter extends UnitFilter
   //
   /**************************************************************************************************/
   
-  private double coefficient;
   private double lastInput;
   private double lastOutput;
+  
+  // Port for coefficient changes
+  public UnitInputPort coefficient;
   
   /**************************************************************************************************/
   //
@@ -31,10 +34,10 @@ public class AllpassFilter extends UnitFilter
    * @param coeffient double the coeffient for the allpass filter
    */
    
-  public AllpassFilter(double coefficient)
+  public AllpassFilter()
   {
     super();
-    this.coefficient = coefficient;
+    addPort(coefficient = new UnitInputPort("Coefficient", 1.0));
     lastInput = 0;
     lastOutput = 0;
   }
@@ -57,29 +60,17 @@ public class AllpassFilter extends UnitFilter
      double[] inputs = input.getValues();
      double[] outputs = output.getValues();
      
+     // Get current coefficient
+     double c = coefficient.getValue();
+     
      for(int i=start; i<limit; i++)
      {
        double sample = inputs[i];
-       double newSample = (coefficient*sample) + lastInput - (coefficient*lastOutput);
+       double newSample = (c*sample) + lastInput - (c*lastOutput);
        lastInput = sample;
        lastOutput = newSample;
        outputs[i] = newSample;
      }
-   }
-   
-  /**************************************************************************************************/
-  //
-  /* SetCoefficient  
-  //
-  /**************************************************************************************************/
-  /**
-   * Update the coeffieient of the filter
-   * @param sample coefficient the new coefficient value
-   */
-   
-   public void setCoefficient(double coefficient)
-   {
-     this.coefficient = coefficient;
    }
   
 }

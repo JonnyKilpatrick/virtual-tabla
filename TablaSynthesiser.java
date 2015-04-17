@@ -87,7 +87,7 @@ public class TablaSynthesiser implements IAudioPlayer
   /**************************************************************************************************/
   //
   /* playSample
-   //
+  //
   /**************************************************************************************************/
 
   /**
@@ -151,9 +151,11 @@ public class TablaSynthesiser implements IAudioPlayer
           new WaveguideParameters(2974.71875, 0.168426513671875, 140.1328125, 0.593353271484375),
           new WaveguideParameters(191.0390625, 0.786865234375, 262.25, 0.858978271484375)
         },
-      700.1640625,
-      31.9921875
-    );
+        191.0390625,
+        31.9921875
+      );
+      
+      //lowCenterSynth.pitchBend(350, 0.2);
     }
     catch(Exception ex)
     {
@@ -199,11 +201,13 @@ public class TablaSynthesiser implements IAudioPlayer
           new WaveguideParameters(1403.3359375, 0.584136962890625, 357.34375, 0.929473876953125),
           new WaveguideParameters(704.171875, 0.84820556640625, 94.0859375, 0.99322509765625),
           new WaveguideParameters(1690.40625, 0.89715576171875, 272.265625, 0.975341796875),
-          new WaveguideParameters(2040.4921875, 0.45819091796875, 413.3984375, 0.77734375),
+          new WaveguideParameters(2040.4921875, 0.45819091796875, 413.3984375, 0.77734375)
         },
         704.171875,
         31.9921875
       );
+      
+      hiCenterSynth.pitchBend(310, 0.5);
     }
     catch(Exception ex)
     {

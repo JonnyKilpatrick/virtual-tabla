@@ -57,8 +57,8 @@ public class SingleBandedWaveguide extends Circuit
     // Initialise units and add to circuit
     add(bandpass = new FilterBandPass());
     add(buffer = new CircularBuffer(maxBufferSize, 1, 1));
-    add(allpass1 = new AllpassFilter(1));
-    add(allpass2 = new AllpassFilter(1));
+    add(allpass1 = new AllpassFilter());
+    add(allpass2 = new AllpassFilter());
     add(pitchBendController = new PitchBendController(samplingRate, buffer, allpass1, allpass2));
 
     // Set up input an output to be called when using the circuit
@@ -92,8 +92,8 @@ public class SingleBandedWaveguide extends Circuit
     int delayLength = (int) loop;
     double fractionalDelay = loop - delayLength;
     double coefficient = (1-fractionalDelay)/(1+fractionalDelay);
-    allpass1.setCoefficient(coefficient);
-    allpass2.setCoefficient(coefficient);
+    allpass1.coefficient.set(coefficient);
+    allpass2.coefficient.set(coefficient);
 
     // Allocate new delay length
     buffer.allocate(delayLength, delayLength);

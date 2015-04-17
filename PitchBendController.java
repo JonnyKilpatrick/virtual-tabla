@@ -109,7 +109,7 @@ public class PitchBendController extends UnitBinaryOperator
      
      // Set the coefficient of the second allpass interpolated readpointer
      double fracPart = delay - intPart;
-     allpassFilterReader2.setCoefficient((1-fracPart)/(1+fracPart));
+     allpassFilterReader2.coefficient.set((1-fracPart)/(1+fracPart));
      
      // Set the flag for pitch bend to true, to be carried out by the function evaluator
      pitchBend = true;
@@ -152,7 +152,7 @@ public class PitchBendController extends UnitBinaryOperator
             int intPart = (int) delay;
             buffer.setPointer2Delay(intPart);
             double fracPart = delay - intPart;
-            allpassFilterReader2.setCoefficient((1-fracPart)/(1+fracPart));
+            allpassFilterReader2.coefficient.set((1-fracPart)/(1+fracPart));
           }
           else
           {
@@ -161,7 +161,7 @@ public class PitchBendController extends UnitBinaryOperator
             int intPart = (int) delay;
             buffer.setPointer1Delay(intPart);
             double fracPart = delay - intPart;
-            allpassFilterReader1.setCoefficient((1-fracPart)/(1+fracPart));
+            allpassFilterReader1.coefficient.set((1-fracPart)/(1+fracPart));
           }
             
           // reset blendFactor
@@ -171,7 +171,7 @@ public class PitchBendController extends UnitBinaryOperator
         // If count is > 4 then we've waited 5 samples so can start cross fading between the two pointers
         if(count16 > 4)
         {
-          blendFactor = (count16 - 5) / 11;
+          //blendFactor = (count16 - 5) / 11;
         }
           
         // If totalCount is same as pitchBendTotalSamples, pitch bend is finished so reset variables

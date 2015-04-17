@@ -31,8 +31,6 @@ public class CircularBuffer extends UnitFilter
   private int secondReadPointer;   // Second read pointer
   
   // Ports
-  //public UnitInputPort input;
- // public UnitOutputPort outputA;
   public UnitOutputPort outputB;
   
   
@@ -68,8 +66,6 @@ public class CircularBuffer extends UnitFilter
     secondReadPointer = (bufferSize - delayOfSecondReadPointer) % bufferSize;
     
     // Add ports
-    //addPort(input = new UnitInputPort("Input"));
-    //addPort(outputA = new UnitOutputPort("OutputA"));
     addPort(outputB = new UnitOutputPort("OutputB"));
   }
   

@@ -59,8 +59,8 @@ public class KarplusStrongNote
       lineOut.stop();
       
       // Initialise Filters
-      allpassFilterReader1 = new AllpassFilter(1);
-      allpassFilterReader2 = new AllpassFilter(1);
+      allpassFilterReader1 = new AllpassFilter();
+      allpassFilterReader2 = new AllpassFilter();
       lowpassFilterReader1 = new LowpassFilter(1.0, 0.5);
       lowpassFilterReader2 = new LowpassFilter(1.0, 0.5);
       
@@ -221,8 +221,8 @@ public class KarplusStrongNote
      // Set c1 and c2 initial values in the filters
      double fracPart = loop - numSamples;
      double coefficient = (1-fracPart)/(1+fracPart);
-     allpassFilterReader1.setCoefficient(coefficient);
-     allpassFilterReader2.setCoefficient(coefficient); 
+     allpassFilterReader1.coefficient.set(coefficient);
+     allpassFilterReader2.coefficient.set(coefficient); 
      
      // Queue the initial values into the initial evaluator to fill the delay line
      initialInput.dataQueue.clear();
