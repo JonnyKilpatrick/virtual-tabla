@@ -128,7 +128,7 @@ public class WaveguideFitnessEvaluator implements FitnessEvaluator<BitString>
       }
     }
     
-    if(fundimentalFreq < 100)
+    if(fundimentalFreq < 70)
     {
       System.out.println(100);
       return 100;

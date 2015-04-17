@@ -66,7 +66,7 @@ public class Mixer extends UnitGenerator
        for(int n=0; n<numInputs; n++)
        {
          double inputs[] = input.getValues(n);
-         total += inputs[i] * 0.9;
+         total += inputs[i];
        }
        if(total>1)
        {
@@ -78,7 +78,7 @@ public class Mixer extends UnitGenerator
        }
        else
        {
-         outputs[i] = total;// / numInputs;
+         outputs[i] = total;
        }
      }
    }

@@ -7,7 +7,7 @@ import org.uncommons.watchmaker.framework.operators.EvolutionPipeline;
 import org.uncommons.watchmaker.framework.selection.RouletteWheelSelection;
 import org.uncommons.maths.random.MersenneTwisterRNG;
 import org.uncommons.watchmaker.framework.termination.Stagnation;
-import org.uncommons.watchmaker.framework.termination.TargetFitness;
+import org.uncommons.watchmaker.framework.termination.GenerationCount;
 import org.uncommons.maths.random.Probability;
 
 import com.jsyn.JSyn;
@@ -56,7 +56,7 @@ public class WaveguideGA
     
     // Create operators for mutation and evolution
     List<EvolutionaryOperator<BitString>> operators = new LinkedList<EvolutionaryOperator<BitString>>();
-    operators.add(new BitStringMutation(new Probability(0.1)));
+    operators.add(new BitStringMutation(new Probability(0.01)));
     operators.add(new BitStringCrossover());
     EvolutionaryOperator<BitString> pipeline = new EvolutionPipeline<BitString>(operators);
     
@@ -78,18 +78,18 @@ public class WaveguideGA
       random);
     
     engine.addEvolutionObserver(new EvolutionObserver<BitString>()
-  {
+    {
       public void populationUpdate(PopulationData<? extends BitString> data)
       {
           System.out.printf("Generation %d: %s\n",
                             data.getGenerationNumber(),
                             data.getBestCandidate());
       }
-  });
+    });
       
     // Run the algorithm
     ((GenerationalEvolutionEngine<BitString>)engine).setSingleThreaded(true);
-    BitString result = engine.evolve(50, 1, new Stagnation(20, false));
+    BitString result = engine.evolve(70, 1, new TerminationCondition[] {new Stagnation(20, false), new GenerationCount(200)});
     
     WaveguideParameters[] p = ((WaveguideFitnessEvaluator)fitnessEvaluator).convertToParameters(result.toString());
     
@@ -121,11 +121,13 @@ public class WaveguideGA
     lineOut.resetData();
     note.playNote(p, fundimentalFreq, gain);
     try {
-    synth.sleepFor(49280 / 44100);
-  } catch (InterruptedException e) {
-    // TODO Auto-generated catch block
-    e.printStackTrace();
-  }
+      synth.sleepFor(49280 / 44100);
+    } 
+    catch (InterruptedException e) 
+    {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
     
     lineOut.stop();
     
@@ -169,19 +171,16 @@ public class WaveguideGA
     for(int i=0; i<35; i++)
     {
       note.playNote(p, fundimentalFreq, gain);
-      try {
-      Thread.sleep(1500);
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      try 
+      {
+        Thread.sleep(1500);
+      } 
+      catch (InterruptedException e) 
+      {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
     }
-    }
-    
-    /*1408.34375, 0.835357666015625 ,434.421875, 0.827301025390625
-    556.1328125, 0.736602783203125 ,360.3515625, 0.3970947265625
-    1742.421875, 0.551788330078125 ,318.3046875, 0.923095703125
-    697.1640625, 0.873443603515625 ,136.1328125, 0.99505615234375
-    1090.265625, 0.872802734375 ,47.0390625, 0.900115966796875*/
     
     return null;   
   }
@@ -189,13 +188,16 @@ public class WaveguideGA
   
   public static void main(String[] args)
   {
-  try {
-    WaveguideGA.runGeneticAlgorithm(5, "C:/Users/Jon/Documents/Computer Science/Third Year/Dissertation/Code/VirtualTablaSynthesiser/Samples/High/21_14_01.AIF");
-  } catch (IOException e) {
-    // TODO Auto-generated catch block
-    e.printStackTrace();
-  }  
-  System.out.println("Finished...");
+    try 
+    {
+      WaveguideGA.runGeneticAlgorithm(5, "C:/Users/Jon/Documents/Computer Science/Third Year/Dissertation/Code/VirtualTablaSynthesiser/Samples/High/21_14_01.AIF");
+    } 
+    catch (IOException e) 
+    {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }  
+      System.out.println("Finished...");
   }
   
 

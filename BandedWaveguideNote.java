@@ -16,7 +16,7 @@ public class BandedWaveguideNote
   /* Constants
   //
   /**************************************************************************************************/
-  private static final int MAX_BUFFER_SIZE = 600;  
+  private static final int MAX_BUFFER_SIZE = 1000;  
   
   /**************************************************************************************************/
   //
@@ -35,6 +35,8 @@ public class BandedWaveguideNote
   private int samplingRate;
   private double fundimentalFrequency;
   private int numSingleWaveguides;
+  
+  private boolean noteStarted;                         // Whether the note has been hit for the first time, so we know when to connect it to the line out
   
   /**************************************************************************************************/
   //
@@ -84,8 +86,8 @@ public class BandedWaveguideNote
         initialInput[i].output.connect(0, bandedWaveguide.inputs[i], 0);
         
         // Also connect initial input to line out
-        //initialInput[i].output.connect(0, lineOut.input, 0);
-        //initialInput[i].output.connect(0, lineOut.input, 1);
+        //initialInput[i].output.connect(0, ((LineOut)lineOut).input, 0);
+        //initialInput[i].output.connect(0, ((LineOut)lineOut).input, 1);
                 
         // Connect the output of the banded waveguide to every input
         bandedWaveguide.output.connect(0, bandedWaveguide.inputs[i], 0);
@@ -94,16 +96,11 @@ public class BandedWaveguideNote
       // Connect output of banded waveguide to the overall output gain
       bandedWaveguide.output.connect(0, outputGain.input, 0);
       
-      // Connect output of output gain to lineout or to the capture output, depending on what the lineOut object is
-      if(lineOut instanceof LineOut)
-      { 
-        outputGain.output.connect(0, ((LineOut)lineOut).input, 0);
-        outputGain.output.connect(0, ((LineOut)lineOut).input, 1);
-      }
-      else if(lineOut instanceof CaptureOutput)
-      {
-        outputGain.output.connect(0, ((CaptureOutput)lineOut).input, 0);
-      }
+      // Set overall volume control as 0 initially to stop buzz before not is played
+      outputGain.gain.set(0);
+      
+      // Set not started as false as it's not yet been hit
+      noteStarted = false;
     }
     // Handle errors
     catch (Exception ex)
@@ -140,8 +137,6 @@ public class BandedWaveguideNote
      }
      
      this.fundimentalFrequency = fundimentalFrequency;
-     
-     lineOut.stop();
      
      FloatSample[] floatSamples = new FloatSample[numSingleWaveguides]; // FloatSample for each initial input
      float[] initialWaveTable = null;   // Float version of each initial input
@@ -186,6 +181,24 @@ public class BandedWaveguideNote
      {
        initialInput[i].dataQueue.clear();
        initialInput[i].dataQueue.queue(floatSamples[i], 0, floatSamples[i].getNumFrames());
+     }
+     
+     // if this is the first time this note has been hit connect the output to the lineout
+     if(noteStarted == false)
+     {
+       // Connect output of output gain to lineout or to the capture output, depending on what the lineOut object is
+       if(lineOut instanceof LineOut)
+       { 
+         outputGain.output.connect(0, ((LineOut)lineOut).input, 0);
+         outputGain.output.connect(0, ((LineOut)lineOut).input, 1);
+       }
+       else if(lineOut instanceof CaptureOutput)
+       {
+         outputGain.output.connect(0, ((CaptureOutput)lineOut).input, 0);
+       } 
+       
+       // Set noteStarted as true as it's been played once
+       noteStarted = true;
      }
      
      // Start the processing to play sound

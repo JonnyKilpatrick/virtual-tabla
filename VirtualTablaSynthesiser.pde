@@ -130,14 +130,14 @@ void draw()
   ellipse(leftCircleCenter.getX(), leftCircleCenter.getY(), leftCircleRadius, leftCircleRadius);
   //  // Syahi in middle
   fill(0, 0, 0);
-  ellipse(width * (3.5/ 12.0), height/2.0, width * (1.0 /15.0), width * (1.0/15.0));
+  //ellipse(width * (3.5/ 12.0), height/2.0, width * (1.0 /15.0), width * (1.0/15.0));
 
   // Smaller Drum
   fill(247, 232, 179);
   ellipse(rightCircleCenter.getX(), rightCircleCenter.getY(), rightCircleRadius, rightCircleRadius);
   //  // Syahi in middle
   fill(0, 0, 0);
-  ellipse(width * (9.0/12.0), height/2.0, width * (1.0/15.0), width * (1.0/15.0));
+  //ellipse(width * (9.0/12.0), height/2.0, width * (1.0/15.0), width * (1.0/15.0));
 
   // ...
 

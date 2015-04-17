@@ -73,10 +73,7 @@ public class TablaSynthesiser implements IAudioPlayer
 
     // Initialise drum synthesisers
     hiCenterSynth = new BandedWaveguideNote(synth, lineOut, 5);
-    //lowCenterSynth = new BandedWaveguideNote(synth, lineOut, 5, null);
-    //lowCenterSynth = new KarplusStrongNote(synth, lineOut, null);
-    //hiRimSynth = new KarplusStrongNote(synth, lineOut, null);
-    //lowRimSynth = new KarplusStrongNote(synth, lineOut, null);
+    lowCenterSynth = new BandedWaveguideNote(synth, lineOut, 5);
     
     // Work out frequency ranges
     hiFrequencyRange = HIGHEST_FREQUENCY_HI - LOWEST_FREQUENCY_HI;
@@ -131,16 +128,9 @@ public class TablaSynthesiser implements IAudioPlayer
     {
       // Set the amplitude
       double amplitude = (double) midi.getVelocity() / 127.0;
-      
-      // If the rim is hit
-      if(note > 110)
-      {
-//        lowRimSynth.playNote(180, amplitude, 10, 20);
-      }
-      else
-      {
-        //double frequency = LOWEST_FREQUENCY_LOW + (lowFrequencyRange * ((double) note/127));
-        //double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
+
+      //double frequency = LOWEST_FREQUENCY_LOW + (lowFrequencyRange * ((double) note/127));
+      //double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
         //lowCenterSynth.playNote(frequency, amplitude, duration, 60);
 //        lowCenterSynth.playNote(
 //          new WaveguideParameters[] {
@@ -152,7 +142,18 @@ public class TablaSynthesiser implements IAudioPlayer
 //          },
 //          124
 //        );
-      }
+
+      lowCenterSynth.playNote(
+        new WaveguideParameters[] {
+          new WaveguideParameters(371.0859375, 0.71295166015625, 38.03125, 0.7628173828125),
+          new WaveguideParameters(724.171875, 0.059051513671875, 799.7734375, 0.5528564453125),
+          new WaveguideParameters(465.109375, 0.674530029296875, 501.484375, 0.55609130859375),
+          new WaveguideParameters(2974.71875, 0.168426513671875, 140.1328125, 0.593353271484375),
+          new WaveguideParameters(191.0390625, 0.786865234375, 262.25, 0.858978271484375)
+        },
+      700.1640625,
+      31.9921875
+    );
     }
     catch(Exception ex)
     {
@@ -165,7 +166,7 @@ public class TablaSynthesiser implements IAudioPlayer
    * Plays the right smaller drum samples given the note 
    * @param midi MidiMessage the midi message containing velocity 0-127 and 0-127 from the center of the drum to the rim
    */
-int ppp = 0;
+
   private void playHighDrum(MidiMessage midi)
   {
     // Split up drum into three sections and call the corresponding sample player
@@ -176,14 +177,7 @@ int ppp = 0;
     {
       // Set the amplitude
       double amplitude = (double) midi.getVelocity() / 127.0;
-      
-      // If the rim is hit
-      if(note > 110)
-      {
-//        hiRimSynth.playNote(430, amplitude, 10, 20);
-      }
-      else
-      {
+
         //double frequency = LOWEST_FREQUENCY_HI + (hiFrequencyRange * ((double) note/127));
         //double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
 //        hiCenterSynth.playNote(
@@ -199,42 +193,17 @@ int ppp = 0;
 //          30
 //        );
 
-        hiCenterSynth.playNote(
-          new WaveguideParameters[] {
-            new WaveguideParameters(1408.34375, 0.835357666015625, 434.421875, 0.827301025390625),
-            new WaveguideParameters(556.1328125, 0.736602783203125, 360.3515625, 0.3970947265625),
-            new WaveguideParameters(1742.421875, 0.551788330078125, 318.3046875, 0.923095703125),
-            new WaveguideParameters(697.1640625, 0.873443603515625, 136.1328125, 0.99505615234375),
-            new WaveguideParameters(1090.265625, 0.872802734375, 47.0390625, 0.900115966796875)
-          },
-          556.1328125,
-          22.6953125
-        );
-        if(ppp%3 == 0)
-        { 
-          try
-          {
-            Thread.sleep(250);
-          }
-          catch(Exception ex)
-          {
-          }
-          hiCenterSynth.pitchBend(550, 0.01);
-        }
-        ppp++;
-
-//        hiCenterSynth.playNote(
-//          new WaveguideParameters[] {
-//            new WaveguideParameters(1088.265625, 0.2078857421875, 1088.265625/1.1278094436168145, 0.12139892578125),
-//            new WaveguideParameters(3596.875, 0.760498046875, 3596.875/40.37533982285363, 0.25665283203125),
-//            new WaveguideParameters(141.03125, 0.449981689453125, 141.03125/0.23921022990790433, 0.250579833984375),
-//            new WaveguideParameters(3435.8359375, 0.892822265625, 3435.8359375/12.666311454163187, 0.96197509765625),
-//            new WaveguideParameters(132.03125, 0.84368896484375, 132.03125/0.7898672649093288, 0.705291748046875)
-//          },
-//          132.03125,
-//          2.5078125
-//        );
-      }
+      hiCenterSynth.playNote(
+        new WaveguideParameters[] {
+          new WaveguideParameters(2544.6171875, 0.56427001953125, 125.1171875, 0.967529296875),
+          new WaveguideParameters(1403.3359375, 0.584136962890625, 357.34375, 0.929473876953125),
+          new WaveguideParameters(704.171875, 0.84820556640625, 94.0859375, 0.99322509765625),
+          new WaveguideParameters(1690.40625, 0.89715576171875, 272.265625, 0.975341796875),
+          new WaveguideParameters(2040.4921875, 0.45819091796875, 413.3984375, 0.77734375),
+        },
+        704.171875,
+        31.9921875
+      );
     }
     catch(Exception ex)
     {
