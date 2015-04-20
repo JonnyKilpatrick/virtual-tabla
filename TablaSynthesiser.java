@@ -111,6 +111,27 @@ public class TablaSynthesiser implements IAudioPlayer
       playHighDrum(midi);
     }
   }  
+  
+  
+  /**************************************************************************************************/
+  //
+  /* pitchBend
+  //
+  /**************************************************************************************************/
+
+  /**
+   * Starts a pitch bend if the last one has finished
+   * @param midiMessage MidiMessage the message containing velocity, note and right/left drum 
+   */
+  public void pitchBend(MidiMessage midi)
+  {
+    // Only want to pitch bend on the bigger drum
+    if (midi.getDrum() == TablaDrum.LEFT)
+    {  
+      // Trigger the sound
+      lowCenterSynth.pitchBend();
+    }
+  }  
 
 
   /**
@@ -154,8 +175,6 @@ public class TablaSynthesiser implements IAudioPlayer
         191.0390625,
         31.9921875
       );
-      
-      //lowCenterSynth.pitchBend(350, 0.2);
     }
     catch(Exception ex)
     {
@@ -206,8 +225,6 @@ public class TablaSynthesiser implements IAudioPlayer
         704.171875,
         31.9921875
       );
-      
-      hiCenterSynth.pitchBend(310, 0.5);
     }
     catch(Exception ex)
     {

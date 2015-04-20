@@ -30,15 +30,15 @@ public class PitchBendController extends UnitBinaryOperator
   private double numSteps;           // Total number of steps
   private double blendFactor;        // Used in the legato cross fade between pointers, blending from 0 to 1;
   private int count16;               // Counts up to 16, per the sample rate, where read pointers jump every 16 samples
-  private int totalCount;            // Total number of samples into the pitch bend
+  private long totalCount;            // Total number of samples into the pitch bend
   private boolean currentPointer;    // True when the current pointer being read from is pointer 1
   
   // References to other unit gens to control
+  private FilterBandPass bandpass;
   private CircularBuffer buffer;
   private AllpassFilter allpassFilterReader1;
   private AllpassFilter allpassFilterReader2;
 
-  
   /**************************************************************************************************/
   //
   /* Constructor 
@@ -46,17 +46,20 @@ public class PitchBendController extends UnitBinaryOperator
   /**************************************************************************************************/
   /**
    * Class constructor
+   * @param samplingRate double the sampling rate of the synthesiser, needed to work out how many samples the pitch bend will last
+   * @param bandpass FilterBandPass reference to the bandpass for this delay line, needed to update the center frequency as the delay length changes
    * @param buffer CircularBuffer reference to the delay line, needed to update the delay lengths
-   * @param allpassFilteredReader1 AllpassFilter a copy of the first allpass filter, needed to update the coefficient
-   * @param allpassFilteredReader2 AllpassFilter a copy of the second allpass filter, needed to update the coefficient
+   * @param allpassFilteredReader1 AllpassFilter reference to the first allpass filter, needed to update the coefficient
+   * @param allpassFilteredReader2 AllpassFilter reference to the second allpass filter, needed to update the coefficient
    */
    
-  public PitchBendController(double samplingRate, CircularBuffer buffer, AllpassFilter allpassFilterReader1, AllpassFilter allpassFilterReader2)
+  public PitchBendController(double samplingRate, FilterBandPass bandpass, CircularBuffer buffer, AllpassFilter allpassFilterReader1, AllpassFilter allpassFilterReader2)
   {
     super();
     
     // Initialise instance variables 
     this.samplingRate = samplingRate;
+    this.bandpass = bandpass;
     this.buffer = buffer;
     this.allpassFilterReader1 = allpassFilterReader1;
     this.allpassFilterReader2 = allpassFilterReader2;
@@ -105,7 +108,7 @@ public class PitchBendController extends UnitBinaryOperator
      // Move position of second readPointer
      double delay = samplingRate / frequencyPointer2;
      int intPart = (int) delay;
-     buffer.setPointer2Delay(intPart);
+     buffer.delayPointer2.set(intPart);
      
      // Set the coefficient of the second allpass interpolated readpointer
      double fracPart = delay - intPart;
@@ -144,24 +147,26 @@ public class PitchBendController extends UnitBinaryOperator
         // If count is 0, 16 samples have passed to alter delay length
         if(count16 == 0)
         {            
-          // Update the frequency of the current pointer, update corresponding read pointer, update coefficient for allpass filter
+          // Update the frequency of the current pointer, update corresponding read pointer, update coefficient for allpass filter, update center frequency for bandpass filter
           if(currentPointer == true)
           {
             frequencyPointer2 += frequencyStep;
             double delay = samplingRate / frequencyPointer2;
             int intPart = (int) delay;
-            buffer.setPointer2Delay(intPart);
+            buffer.delayPointer2.set(intPart);
             double fracPart = delay - intPart;
             allpassFilterReader2.coefficient.set((1-fracPart)/(1+fracPart));
+            bandpass.frequency.set(frequencyPointer2);
           }
           else
           {
             frequencyPointer1 += frequencyStep;
             double delay = samplingRate / frequencyPointer1;
             int intPart = (int) delay;
-            buffer.setPointer1Delay(intPart);
+            buffer.delayPointer1.set(intPart);
             double fracPart = delay - intPart;
             allpassFilterReader1.coefficient.set((1-fracPart)/(1+fracPart));
+            bandpass.frequency.set(frequencyPointer1);
           }
             
           // reset blendFactor
@@ -171,7 +176,7 @@ public class PitchBendController extends UnitBinaryOperator
         // If count is > 4 then we've waited 5 samples so can start cross fading between the two pointers
         if(count16 > 4)
         {
-          //blendFactor = (count16 - 5) / 11;
+          blendFactor = (count16 - 5) / 11;
         }
           
         // If totalCount is same as pitchBendTotalSamples, pitch bend is finished so reset variables
@@ -184,11 +189,11 @@ public class PitchBendController extends UnitBinaryOperator
           
           if(numSteps % 2 == 0)
           {
-            currentPointer = false;
+            currentPointer = true;
           }
           else
           {
-            currentPointer = true;
+            currentPointer = false;
           }
         }
       } 
@@ -225,10 +230,13 @@ public class PitchBendController extends UnitBinaryOperator
       }
       
       // If pitchbending and time to swap pointer, swap
-      if(pitchBend == true && count16 == 0)
+      if(pitchBend == true)
       { 
-        // Flip current pointer
-        currentPointer = !currentPointer;
+        if(count16 == 0)
+        {
+          // Flip current pointer
+          currentPointer = !currentPointer;
+        }
         
         // Increment counts
         count16 = (count16 + 1) % 16;
@@ -239,4 +247,18 @@ public class PitchBendController extends UnitBinaryOperator
       outputs[i] = result;  
     }
   } 
+  
+  /**************************************************************************************************/
+  //
+  /* stopBend  
+  //
+  /**************************************************************************************************/
+  /**
+   * Stops the pitch bend
+   */
+   
+  public void stopBend()
+  {
+    pitchBend = false;
+  }
 }

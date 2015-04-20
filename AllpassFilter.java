@@ -60,11 +60,11 @@ public class AllpassFilter extends UnitFilter
      double[] inputs = input.getValues();
      double[] outputs = output.getValues();
      
-     // Get current coefficient
-     double c = coefficient.getValue();
-     
      for(int i=start; i<limit; i++)
      {
+       // Get current coefficient
+       double c = coefficient.getValue();
+       
        double sample = inputs[i];
        double newSample = (c*sample) + lastInput - (c*lastOutput);
        lastInput = sample;

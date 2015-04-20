@@ -181,12 +181,17 @@ void draw()
             
             // Play sound
             audioPlayer.playSample(midi);
+            
+            // If this was the left drum hit, record it so that pitch slides cannot be triggered straight away
+            if(midi.getDrum == TablaDrum.LEFT)
+            {
+              gestureRecogniser.recordLeftDrumHit(frame);
+            }
           }
         }
   
         // Clean up the map storing gestures
         gestureRecogniser.cleanUpFingerMap(frame);
-  
   
         // Get the finger position in real space
         Vector fingerPosition   = finger.tipPosition();
@@ -201,6 +206,18 @@ void draw()
         fill(0);
         float ellipseDiameter = ELLIPSE_MIN + (((zRange - fingerPosition.getZ()) / zRange) * (ellipseRange));
         ellipse(fingerPosition.getX(), fingerPosition.getY(), ellipseDiameter, ellipseDiameter);
+      }
+      
+      // Work out if the palm has been slid to control pitch
+      Gesture pitchBend = gestureRecogniser.checkForPalmSlide(hand);
+      
+      // Convert gesture to midi message
+      Midi midiPitchBend = mapToScreen.convertToMidiMessage(gesture);
+      
+      // If a Midi message was returned, tell the synthesiser to pitch bend
+      if (midi !=null)
+      {
+        
       }
     }
   }

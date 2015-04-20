@@ -31,7 +31,10 @@ public class CircularBuffer extends UnitFilter
   private int secondReadPointer;   // Second read pointer
   
   // Ports
-  public UnitOutputPort outputB;
+  public UnitOutputPort outputB;  // Second output for second read pointer
+  public UnitInputPort delayPointer1;  // First pointer delay
+  public UnitInputPort delayPointer2;  // Second pointer delay
+  int currentDelay;
   
   
   /**************************************************************************************************/
@@ -42,8 +45,8 @@ public class CircularBuffer extends UnitFilter
   /**
    * Class constructor
    * @param size int the size of the circular buffer
-   * @param delayLength int the distance from the read to the write pointer
-   * @param delayOfSecondReadPointer int the distance from an optional second read pointer to the write pointer
+   * @param delayLength int the distance from the read to the write pointer initially
+   * @param delayOfSecondReadPointer int the distance from an optional second read pointer to the write pointer initially
    */
   public CircularBuffer(int bufferSize, int delayLength, int delayOfSecondReadPointer)
   {
@@ -67,6 +70,8 @@ public class CircularBuffer extends UnitFilter
     
     // Add ports
     addPort(outputB = new UnitOutputPort("OutputB"));
+    addPort(delayPointer1 = new UnitInputPort("Pointer1", delayLength));
+    addPort(delayPointer2 = new UnitInputPort("Pointer2", delayOfSecondReadPointer));
   }
   
   
@@ -76,7 +81,7 @@ public class CircularBuffer extends UnitFilter
   //
   /**************************************************************************************************/
   /**
-   * Sets a new size for the buffer
+   * Sets a new empty buffer
    * @param delayLength int the distance from the read to the write pointer
    * @param delayOfSecondReadPointer int the distance from an optional second read pointer to the write pointer
    */
@@ -113,11 +118,11 @@ public class CircularBuffer extends UnitFilter
 
     for(int i=start; i<limit; i++)
     {
-      // Write input
-      write(inputs[i]);
-      
       // Read from the buffer
       double[] samples = read();
+      
+      // Write input
+      write(inputs[i]);
       
       // Output values to each port
       outputAs[i] = samples[0];  // Pointer 1
@@ -137,8 +142,17 @@ public class CircularBuffer extends UnitFilter
    */
 
    private double[] read()
-   {
+   {     
      // FIRST READ POINTER
+     
+     // Get the delay pointer 1 length from input and make sure this is correctly set
+     readPointer = (writePointer - (int)delayPointer1.getValue()) % bufferSize; 
+     // Make sure non-negative
+     if(readPointer < 0)
+     {
+       readPointer += bufferSize;
+     }
+     
      // Get value at current pointer position
      double pointer1 = circularBuffer[readPointer]; 
      
@@ -146,6 +160,15 @@ public class CircularBuffer extends UnitFilter
      readPointer = (readPointer + 1) % bufferSize;
      
      // SECOND READ POINTER
+     
+     // Get the delay pointer 1 length from input and make sure this is correctly set
+     secondReadPointer = (writePointer - (int)delayPointer2.getValue()) % bufferSize;     
+     // Make sure non-negative
+     if(secondReadPointer < 0)
+     {
+       secondReadPointer += bufferSize;
+     }
+     
      // Get value at current pointer position
      double pointer2 = circularBuffer[secondReadPointer];
      
@@ -174,48 +197,4 @@ public class CircularBuffer extends UnitFilter
      writePointer = (writePointer + 1) % bufferSize;
    }
    
-   
-  /**************************************************************************************************/
-  //
-  /* setPointer1Delay  
-  //
-  /**************************************************************************************************/
-  /**
-   * Update the position of pointer1
-   * @param delay int the number of samples deleay (distance from pointer to the write pointer)
-   */
-   
-   public void setPointer1Delay(int delay)
-   { 
-     readPointer = (writePointer - delay) % bufferSize;
-     
-     // Make sure non-negative
-     if(readPointer < 0)
-     {
-       readPointer += bufferSize;
-     }
-   }
-   
-   
-  /**************************************************************************************************/
-  //
-  /* setPointer2Delay  
-  //
-  /**************************************************************************************************/
-  /**
-   * Update the position of pointer2
-   * @param delay int the number of samples deleay (distance from pointer to the write pointer)
-   */
-   
-   public void setPointer2Delay(int delay)
-   { 
-     secondReadPointer = (writePointer - delay) % bufferSize;
-     
-     // Make sure non-negative
-     if(secondReadPointer < 0)
-     {
-       secondReadPointer += bufferSize;
-     }
-   }
-  
 }

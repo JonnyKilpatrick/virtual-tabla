@@ -59,7 +59,7 @@ public class SingleBandedWaveguide extends Circuit
     add(buffer = new CircularBuffer(maxBufferSize, 1, 1));
     add(allpass1 = new AllpassFilter());
     add(allpass2 = new AllpassFilter());
-    add(pitchBendController = new PitchBendController(samplingRate, buffer, allpass1, allpass2));
+    add(pitchBendController = new PitchBendController(samplingRate, bandpass, buffer, allpass1, allpass2));
 
     // Set up input an output to be called when using the circuit
     input = bandpass.input;
@@ -85,9 +85,12 @@ public class SingleBandedWaveguide extends Circuit
 
   public void playNote(WaveguideParameters waveguideParameters)
   {  
+    // Stop any previous pitch bending
+    pitchBendController.stopBend();
+    
     // Work out the length of the delay line, and the allpass coefficients from the frequency 
 
-    double frequency = waveguideParameters.getCenterFrequency();
+    frequency = waveguideParameters.getCenterFrequency();
     double loop = samplingRate / frequency;
     int delayLength = (int) loop;
     double fractionalDelay = loop - delayLength;
@@ -97,6 +100,8 @@ public class SingleBandedWaveguide extends Circuit
 
     // Allocate new delay length
     buffer.allocate(delayLength, delayLength);
+    buffer.delayPointer1.set(delayLength);
+    buffer.delayPointer2.set(delayLength);
 
     // Set bandpass filter parameters
     bandpass.frequency.set(frequency);
@@ -109,7 +114,7 @@ public class SingleBandedWaveguide extends Circuit
   /**************************************************************************************************/
   //
   /* PitchBend 
-   //
+ //
   /**************************************************************************************************/
   /**
    * Set the pitch bend controller to start bending

@@ -71,7 +71,7 @@ public class KarplusStrongNote
       buffer = new CircularBuffer(1, 1, 1);
       
       // Initialise pitch bend controller
-      pitchBendController = new PitchBendController(samplingRate, buffer, allpassFilterReader1, allpassFilterReader2);
+      pitchBendController = new PitchBendController(samplingRate, null, buffer, allpassFilterReader1, allpassFilterReader2);
       
       // Add Unit Gens to Synth
       synth.add(allpassFilterReader1);

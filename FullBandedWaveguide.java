@@ -107,7 +107,7 @@ public class FullBandedWaveguide extends Circuit
   public void pitchBend(double f1, double f2, double duration)
   {
     // Get the distance between the two frequencies
-    double frequencyChange = f1 - f2;
+    double frequencyChange = f2 - f1;
     
     for(SingleBandedWaveguide s : waveguides)
     {

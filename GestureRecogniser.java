@@ -43,13 +43,21 @@ public class GestureRecogniser
   // The last position of a valid gesture, used for pausing the last if it resulted in triggering a sound
   private Vector lastGesturePosition;
   
+  // The number of samples to wait after hitting a drum before a pitch bend is enabled
+  private long pitchSlideRest;
+  
+  // The timestamp of the last hit - used to determine whether to enable pitch slides
+  private long lastHitTime;
+  
+  // The y height maximum for pitch bending
+  private float heightForSlide;
+  
   
   /**************************************************************************************************/
   //
   /* Constructor 
   //
   /**************************************************************************************************/
-  
   /**
    * Constructor for the class
    * @param velocityThreshold flaot the minimum velcity in the negative Y direction to be considered 
@@ -61,10 +69,12 @@ public class GestureRecogniser
    * triggered in the same region - in microseconds
    * @param distanceToPauseHits float the distance in which to stop any other gestures being 
    * recognised in the set restTimeBetweenHits 
+   * @param pitchSlideRest float the number of frames to wait after triggering a hit before allowing pitch bends
+   * @param heightForSlide float the maximum height in y that a pitch bend can be controlled
    */
    
   public GestureRecogniser(float velocityThreshold, float timeThreshold, float lengthThreshold, 
-    long restTimeBetweenHits, float distanceToPauseHits)
+    long restTimeBetweenHits, float distanceToPauseHits, long pitchSlideRest, float heightForSlide)
   {
     // Initialise map of current gestures
     gestures = new HashMap<Integer, Gesture>();
@@ -78,15 +88,18 @@ public class GestureRecogniser
     this.lengthThreshold = lengthThreshold;
     this.restTimeBetweenHits = restTimeBetweenHits;
     this.distanceToPauseHits = distanceToPauseHits;
+    this.pitchSlideRest = pitchSlideRest;
+    this.heightForSlide = heightForSlide;
+    
+    lastHitTime = 0;
   }
   
   
   /**************************************************************************************************/
   //
-  /* extractGestures - method to track a single finger 
+  /* checkForGestures - method to track a single finger 
   //
   /**************************************************************************************************/
-  
   /**
    * Checks whether a valid gesture has occured in a given finger from the leap software, or track for 
    * future gestures
@@ -95,7 +108,7 @@ public class GestureRecogniser
    */
    
   public Gesture checkForGestures(Finger finger) throws Exception
-  {
+  { 
     try
     {
       // Get the finger id, velocity, position and velocity
@@ -149,8 +162,7 @@ public class GestureRecogniser
         }      
       }
     
-      // Else the finger is not part of a current gesture, so if velocity is greater than threshold, create new gesture
-      
+      // Else the finger is not part of a current gesture, so if velocity is greater than threshold, create new gesture 
       else if (velocity <= velocityThreshold)
       {
         // Create new gesture and initialise fastest velocity
@@ -177,7 +189,6 @@ public class GestureRecogniser
   /* Pause gesture recognition
   //
   /**************************************************************************************************/
-  
   /**
    * Pauses a position of a gesture for the set number of frames, in the set distance so no more 
   // gestures will be triggered there
@@ -186,8 +197,7 @@ public class GestureRecogniser
   
   public void pausePosition(Finger finger) throws Exception
   {
-    // Add rest period for this position
-    
+    // Add rest period for this position 
     try
     {
       pausedPositions.put(lastGesturePosition, finger.frame().timestamp() + restTimeBetweenHits);
@@ -207,7 +217,6 @@ public class GestureRecogniser
   // because the velocity reduced
   //
   /**************************************************************************************************/
-  
   /**
    * Cleans up the maps stored, if a position has been paused this method checks whether to start 
    * allowing gestures here, also clears up the list of current gestures removing those that have been 
@@ -255,7 +264,6 @@ public class GestureRecogniser
       // Now clean up the map of currently paused positions
       // For each position in the map, if it's timestamp + the set rest period is greater than the current timestamp,
       // remove the position from the map
-      
       Iterator<Map.Entry<Vector, Long>> positionIterator = pausedPositions.entrySet().iterator();
   
       while(positionIterator.hasNext())
@@ -271,6 +279,71 @@ public class GestureRecogniser
     {
       ex.printStackTrace();
       throw new Exception("Error: Failed to clean up list of current gestures and pauses");
+    }
+  }
+  
+  /**************************************************************************************************/
+  //
+  /* checkForPalmSlide - method to track a single hand and whether a palm slide occured 
+  //
+  /**************************************************************************************************/
+  /**
+   * Checks whether a valid gesture has occured in a given finger from the leap software, or track for 
+   * future gestures
+   * @param hand Hand the hand to check whether a gesture has occured / track for future gestures 
+   * @return Gesture the gesture found in that hand, if no valid gesture returns null
+   */
+   
+  public Gesture checkForPalmSlide(Hand hand) throws Exception
+  {
+    try
+    {
+      // If enough time has elapsed since the last drum hit, then trigger pitch slide
+      if(lastHitTime + pitchSlideRest <= hand.frame().timestamp())
+      {
+        // Get the hand position
+        Vector currentPosition = hand.palmPosition();
+        
+        // If hand is low enough, return a gesture with it's position
+        if(currentPosition)
+        {
+          return new Gesture(hand.id(), 0, currentPosition);
+        }
+      }     
+    }  
+    catch(Exception ex)
+    {
+      ex.printStackTrace();
+      throw new Exception("Error: Failed to check for palm slide gestures");
+    }
+      
+    // Return null as no sound should be triggered if we've reached this point
+    return null;
+  }
+  
+  
+  /**************************************************************************************************/
+  //
+  /* recordLeftDrumHit 
+  //
+  /**************************************************************************************************/
+  /**
+   * Called to indicate the left drum has been hit, so record this time used for checking that a 
+   * pitch bend can be triggered
+   * @param hand Hand the hand to check whether a gesture has occured / track for future gestures 
+   */
+   
+  public void recordLeftDrumHit(Frame frame) throws Exception
+  {
+    try
+    {
+      // Update the last hit timestamp
+      lastHitTime = frame.timestamp();    
+    }  
+    catch(Exception ex)
+    {
+      ex.printStackTrace();
+      throw new Exception("Error: Failed to record left drum hit timestamp");
     }
   }
   
