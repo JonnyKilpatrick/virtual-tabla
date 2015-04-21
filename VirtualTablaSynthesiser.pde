@@ -16,6 +16,8 @@ final float TIME_THRESHOLD = 0;
 final float LENGTH_THRESHOLD = 0;
 final long REST_PERIOD = 100000;          // microseconds
 final float DISTANCE_TO_PAUSE_HITS = 150;
+final long PITCH_SLIDE_REST = 100000;
+final float HEIGHT_FOR_SLIDE = 100;
 
 // For Midi conversion
 final float VELOCITY_MAXIMUM = -2000;
@@ -97,7 +99,7 @@ void setup()
   // Set up gesture recogniser
   gestureRecogniser = 
     new GestureRecogniser(VELOCITY_THRESHOLD, TIME_THRESHOLD, LENGTH_THRESHOLD, REST_PERIOD, 
-  DISTANCE_TO_PAUSE_HITS);
+  DISTANCE_TO_PAUSE_HITS, PITCH_SLIDE_REST, HEIGHT_FOR_SLIDE);
 
   // Set up Audio Player
   try
@@ -130,14 +132,14 @@ void draw()
   ellipse(leftCircleCenter.getX(), leftCircleCenter.getY(), leftCircleRadius, leftCircleRadius);
   //  // Syahi in middle
   fill(0, 0, 0);
-  //ellipse(width * (3.5/ 12.0), height/2.0, width * (1.0 /15.0), width * (1.0/15.0));
+  ellipse(width * (3.5/ 12.0), height/2.0, width * (1.0 /15.0), width * (1.0/15.0));
 
   // Smaller Drum
   fill(247, 232, 179);
   ellipse(rightCircleCenter.getX(), rightCircleCenter.getY(), rightCircleRadius, rightCircleRadius);
   //  // Syahi in middle
   fill(0, 0, 0);
-  //ellipse(width * (9.0/12.0), height/2.0, width * (1.0/15.0), width * (1.0/15.0));
+  ellipse(width * (9.0/12.0), height/2.0, width * (1.0/15.0), width * (1.0/15.0));
 
   // ...
 
@@ -180,10 +182,10 @@ void draw()
             gestureRecogniser.pausePosition(finger);
             
             // Play sound
-            audioPlayer.playSample(midi);
+            audioPlayer.playSound(midi);
             
             // If this was the left drum hit, record it so that pitch slides cannot be triggered straight away
-            if(midi.getDrum == TablaDrum.LEFT)
+            if(midi.getDrum() == TablaDrum.LEFT)
             {
               gestureRecogniser.recordLeftDrumHit(frame);
             }
@@ -208,16 +210,26 @@ void draw()
         ellipse(fingerPosition.getX(), fingerPosition.getY(), ellipseDiameter, ellipseDiameter);
       }
       
-      // Work out if the palm has been slid to control pitch
-      Gesture pitchBend = gestureRecogniser.checkForPalmSlide(hand);
+      // If the audio player is TablaSynthesiser, with a pitch bend, gesture recognise a pitch bend 
       
-      // Convert gesture to midi message
-      Midi midiPitchBend = mapToScreen.convertToMidiMessage(gesture);
-      
-      // If a Midi message was returned, tell the synthesiser to pitch bend
-      if (midi !=null)
+      if(audioPlayer instanceof TablaSynthesiser)
       {
+      
+        // Work out if the palm has been slid to control pitch
+        Gesture pitchBend = gestureRecogniser.checkForPalmSlide(hand);
         
+        // If a gesutre was found
+        if(pitchBend != null)
+        {
+          // Convert gesture to midi message
+          MidiMessage midiPitchBend = mapToScreen.convertToMidiMessage(pitchBend);
+          
+          // If a Midi message was returned, tell the synthesiser to pitch bend
+          if (midiPitchBend != null)
+          {
+            ((TablaSynthesiser)audioPlayer).pitchBend(midiPitchBend);
+          }
+        }
       }
     }
   }

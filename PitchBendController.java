@@ -90,7 +90,7 @@ public class PitchBendController extends UnitBinaryOperator
    public void startBend(double f1, double f2, double duration)
    { 
      frequencyPointer1 = f1;
-     frequencyPointer2 = f2;
+     frequencyPointer2 = f1;
      
      // Work out the number of legato crossfades possible in the time
      // (16 samples between sending each new fractional delay length value to the readers)
@@ -100,19 +100,38 @@ public class PitchBendController extends UnitBinaryOperator
      
      // Work out what the resulting change in frequency is for each step
      // * 2 because each pointer moves alternatly so must move twice the actual frequency step each time
-     frequencyStep = 2 * ((frequencyPointer2 - frequencyPointer1) / numSteps);
+     frequencyStep = 2 * ((f2 - f1) / numSteps);
      
-     // Set the frequencyPointer2 to be half a step away in the wrong direction so that the second move will move it ahead of the first
-     frequencyPointer2 = frequencyPointer1 - (0.5 * frequencyStep);
-     
-     // Move position of second readPointer
-     double delay = samplingRate / frequencyPointer2;
-     int intPart = (int) delay;
-     buffer.delayPointer2.set(intPart);
-     
-     // Set the coefficient of the second allpass interpolated readpointer
-     double fracPart = delay - intPart;
-     allpassFilterReader2.coefficient.set((1-fracPart)/(1+fracPart));
+     // If initially moving from pointer 1 -> 2
+     if(currentPointer == true)
+     {
+       // Set the frequencyPointer2 to be half a step away in the wrong direction so that the second move will move it ahead of the first
+       frequencyPointer2 = frequencyPointer1 - (0.5 * frequencyStep);
+       
+       // Move position of second readPointer
+       double delay = samplingRate / frequencyPointer2;
+       int intPart = (int) delay;
+       buffer.delayPointer2.set(intPart);
+       
+       // Set the coefficient of the second allpass interpolated readpointer
+       double fracPart = delay - intPart;
+       allpassFilterReader2.coefficient.set((1-fracPart)/(1+fracPart));
+     }
+     // Else moving from pointer 2 -> 1
+     else
+     {
+       // Set the frequencyPointer2 to be half a step away in the wrong direction so that the second move will move it ahead of the first
+       frequencyPointer1 = frequencyPointer2 - (0.5 * frequencyStep);
+       
+       // Move position of first readPointer
+       double delay = samplingRate / frequencyPointer1;
+       int intPart = (int) delay;
+       buffer.delayPointer1.set(intPart);
+       
+       // Set the coefficient of the first allpass interpolated readpointer
+       double fracPart = delay - intPart;
+       allpassFilterReader1.coefficient.set((1-fracPart)/(1+fracPart));
+     }
      
      // Set the flag for pitch bend to true, to be carried out by the function evaluator
      pitchBend = true;
@@ -260,5 +279,20 @@ public class PitchBendController extends UnitBinaryOperator
   public void stopBend()
   {
     pitchBend = false;
+  }
+  
+  /**************************************************************************************************/
+  //
+  /* isFinished  
+  //
+  /**************************************************************************************************/
+  /**
+   * Returns whether the pitch bend controller is still pitch bending
+   * @return boolean
+   */
+   
+  public boolean isFinished()
+  {
+    return !pitchBend;
   }
 }

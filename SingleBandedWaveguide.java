@@ -124,7 +124,31 @@ public class SingleBandedWaveguide extends Circuit
 
   public void pitchBend(double frequencyChange, double duration)
   {
-    pitchBendController.startBend(frequency, frequency + frequencyChange, duration);
+    // Work out new frequency to bend to
+    double newFrequency = frequency + frequencyChange;
+    
+    // Start bend to new frequency
+    pitchBendController.startBend(frequency, newFrequency, duration);
+    
+    // Update current frequency
+    frequency = newFrequency;
+  }
+  
+  
+  /**************************************************************************************************/
+  //
+  /* isPitchBendFinished 
+  //
+  /**************************************************************************************************/
+  /**
+  * Return whether the last pitch bend is finished
+  * @return boolean
+  */
+   
+  public boolean isPitchBendFinished()
+  {    
+    // Just need to look at first waveguide pitch bend controller, as all are finished at the same time
+    return pitchBendController.isFinished();
   }
 }
 

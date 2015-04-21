@@ -253,12 +253,34 @@ public class BandedWaveguideNote
    
   /**
   * Return array of random double values between the given limits 
-  * @param frequencyPointer2 double the new frequency to pitch bend (slide) to
+  * @param newFrequency the new frequency to bend to, in relation to the fundimental
   * @param slideDuration double the duration of the pitch bend in seconds   
   */
    
-  public void pitchBend(double frequencyPointer2, double slideDuration)
+  public void pitchBend(double newFrequency, double slideDuration)
+  { 
+    // Work out difference between new frequency to bend to and the current fundimental frequency
+    double frequencyChange = newFrequency - fundimentalFrequency; 
+   
+    // Start bend to the new note 
+    bandedWaveguide.pitchBend(frequencyChange, slideDuration);
+    
+    // Update current fundimental
+    fundimentalFrequency = newFrequency;
+  }
+  
+  /**************************************************************************************************/
+  //
+  /* isPitchBendFinished 
+  //
+  /**************************************************************************************************/
+  /**
+  * Return whether the last pitch bend is finished
+  * @return boolean
+  */
+   
+  public boolean isPitchBendFinished()
   {    
-    bandedWaveguide.pitchBend(fundimentalFrequency, frequencyPointer2, slideDuration);
+    return bandedWaveguide.isPitchBendFinished();
   }
 }

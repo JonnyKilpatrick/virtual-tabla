@@ -174,7 +174,7 @@ public class TablaSampler implements IAudioPlayer
   
   /**************************************************************************************************/
   //
-  /* playSample
+  /* playSound
   //
   /**************************************************************************************************/
   
@@ -183,7 +183,7 @@ public class TablaSampler implements IAudioPlayer
    * drum was hit and then call the relevant private method
    * @param midiMessage MidiMessage the message containing velocity, note and right/left drum 
    */
-  public void playSample(MidiMessage midi)
+  public void playSound(MidiMessage midi)
   {
     // If left drum, trigger the left drum sampler
     if (midi.getDrum() == TablaDrum.LEFT)
@@ -200,7 +200,7 @@ public class TablaSampler implements IAudioPlayer
     }
     
   }  
-  
+
   
   /**
    * Plays the left bigger drum samples given the note 

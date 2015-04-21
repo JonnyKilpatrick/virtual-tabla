@@ -25,14 +25,14 @@ public class TablaSynthesiser implements IAudioPlayer
   private final String LOW_RIM = "Samples/Low/21_15_07.aif";
   
   // Frequencies
-  private final double HIGHEST_FREQUENCY_HI = 430;
-  private final double LOWEST_FREQUENCY_HI = 400;
-  private final double HIGHEST_FREQUENCY_LOW = 120;
-  private final double LOWEST_FREQUENCY_LOW = 100;
+  private final double HIGHEST_FREQUENCY_LOW = 250.5;
+  private final double LOWEST_FREQUENCY_LOW = 191.0390625;
   
-  // Durations
-  private final double LONGEST_DURATION = 8;
-  private final double SHORTEST_DURATION = 0.1;
+  // Volumes
+  private final double HIGHEST_VOLUME_HI = 35.9921875;
+  private final double LOWEST_VOLUME_HI = 0.2;
+  private final double HIGHEST_VOLUME_LOW = 35.9921875;
+  private final double LOWEST_VOLUME_LOW = 0.2;
   
   
   /**************************************************************************************************/
@@ -48,9 +48,9 @@ public class TablaSynthesiser implements IAudioPlayer
   private BandedWaveguideNote hiCenterSynth;
   private BandedWaveguideNote lowCenterSynth;
   
-  private double hiFrequencyRange;
   private double lowFrequencyRange;
-  private double durationRange;
+  private double lowVolumeRange;
+  private double highVolumeRange;
   
 
   /**************************************************************************************************/
@@ -76,17 +76,17 @@ public class TablaSynthesiser implements IAudioPlayer
     lowCenterSynth = new BandedWaveguideNote(synth, lineOut, 5);
     
     // Work out frequency ranges
-    hiFrequencyRange = HIGHEST_FREQUENCY_HI - LOWEST_FREQUENCY_HI;
     lowFrequencyRange = HIGHEST_FREQUENCY_LOW - LOWEST_FREQUENCY_LOW;
     
-    // Work out duration range
-    durationRange = LONGEST_DURATION - SHORTEST_DURATION;
+    // Work out volume ranges
+    lowVolumeRange = HIGHEST_VOLUME_LOW - LOWEST_VOLUME_LOW;
+    highVolumeRange = HIGHEST_VOLUME_HI - LOWEST_VOLUME_HI;
   }
 
 
   /**************************************************************************************************/
   //
-  /* playSample
+  /* playSound
   //
   /**************************************************************************************************/
 
@@ -95,7 +95,7 @@ public class TablaSynthesiser implements IAudioPlayer
    * drum was hit and then call the relevant private method
    * @param midiMessage MidiMessage the message containing velocity, note and right/left drum 
    */
-  public void playSample(MidiMessage midi)
+  public void playSound(MidiMessage midi)
   {
     // If left drum, trigger the left drum sampler
     if (midi.getDrum() == TablaDrum.LEFT)
@@ -125,11 +125,14 @@ public class TablaSynthesiser implements IAudioPlayer
    */
   public void pitchBend(MidiMessage midi)
   {
-    // Only want to pitch bend on the bigger drum
-    if (midi.getDrum() == TablaDrum.LEFT)
+    // Only want to pitch bend on the bigger drum, and if the previous pitch bend has finished
+    if (midi.getDrum() == TablaDrum.LEFT && lowCenterSynth.isPitchBendFinished())
     {  
+      // Get the position on the drum
+      byte note = midi.getNote();
+      
       // Trigger the sound
-      lowCenterSynth.pitchBend();
+      lowCenterSynth.pitchBend(LOWEST_FREQUENCY_LOW + (((127 - note)/127.0) * lowFrequencyRange), 0.1);
     }
   }  
 
@@ -141,14 +144,13 @@ public class TablaSynthesiser implements IAudioPlayer
 
   private void playLowDrum(MidiMessage midi)
   {
-    // Split up drum into three sections and call the corresponding sample player
-
     byte note = midi.getNote();
 
     try
     {
       // Set the amplitude
       double amplitude = (double) midi.getVelocity() / 127.0;
+      double gain = LOWEST_VOLUME_LOW + (amplitude * lowVolumeRange);
 
       //double frequency = LOWEST_FREQUENCY_LOW + (lowFrequencyRange * ((double) note/127));
       //double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
@@ -173,7 +175,7 @@ public class TablaSynthesiser implements IAudioPlayer
           new WaveguideParameters(191.0390625, 0.786865234375, 262.25, 0.858978271484375)
         },
         191.0390625,
-        31.9921875
+        gain
       );
     }
     catch(Exception ex)
@@ -198,6 +200,7 @@ public class TablaSynthesiser implements IAudioPlayer
     {
       // Set the amplitude
       double amplitude = (double) midi.getVelocity() / 127.0;
+      double gain = LOWEST_VOLUME_HI + (amplitude * highVolumeRange);
 
         //double frequency = LOWEST_FREQUENCY_HI + (hiFrequencyRange * ((double) note/127));
         //double duration = LONGEST_DURATION - (durationRange * ((double) note/127));
@@ -223,7 +226,7 @@ public class TablaSynthesiser implements IAudioPlayer
           new WaveguideParameters(2040.4921875, 0.45819091796875, 413.3984375, 0.77734375)
         },
         704.171875,
-        31.9921875
+        gain
       );
     }
     catch(Exception ex)

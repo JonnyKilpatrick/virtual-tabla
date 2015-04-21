@@ -305,7 +305,8 @@ public class GestureRecogniser
         Vector currentPosition = hand.palmPosition();
         
         // If hand is low enough, return a gesture with it's position
-        if(currentPosition)
+
+        if(currentPosition.getY() < heightForSlide)
         {
           return new Gesture(hand.id(), 0, currentPosition);
         }

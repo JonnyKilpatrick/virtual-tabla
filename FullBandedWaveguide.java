@@ -90,8 +90,7 @@ public class FullBandedWaveguide extends Circuit
     }    
   }
   
-  
-  
+
   /**************************************************************************************************/
   //
   /* PitchBend 
@@ -99,20 +98,31 @@ public class FullBandedWaveguide extends Circuit
   /**************************************************************************************************/
   /**
    * Set the pitch bend controller to start bending
-   * @param f1 double initial frequency
-   * @param f2 double the frequency to pitch bend to
+   * @param frequencyChange double the change in frequency eg 30 is an increase by 30Hz, or -30 is a decrease by 30Hz
    * @param duration double the length of the pitch bend in time
    */
    
-  public void pitchBend(double f1, double f2, double duration)
-  {
-    // Get the distance between the two frequencies
-    double frequencyChange = f2 - f1;
-    
+  public void pitchBend(double frequencyChange, double duration)
+  {   
     for(SingleBandedWaveguide s : waveguides)
     {
       s.pitchBend(frequencyChange, duration);
     }
+  }
+  
+  /**************************************************************************************************/
+  //
+  /* isPitchBendFinished 
+  //
+  /* /**
+  * Return whether the last pitch bend is finished
+  * @return boolean
+  */
+   
+  public boolean isPitchBendFinished()
+  {    
+    // Just need to look at first waveguide pitch bend controller, as all are finished at the same time
+    return waveguides[0].isPitchBendFinished();
   }
 
 }
