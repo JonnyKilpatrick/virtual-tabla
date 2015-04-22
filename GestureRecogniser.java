@@ -348,6 +348,19 @@ public class GestureRecogniser
     }
   }
   
+  
+  /**************************************************************************************************/
+  /*
+   * Updates the threshold for minimum velocity for a valid gesture, so control can be given to gui
+   * @param float threshold the new threshold velocity value (negative for down direction)
+   */
+   
+  public void setVelocityThreshold(float threshold)
+  {
+    velocityThreshold = threshold;    
+  }
+  
+  
   /**************************************************************************************************/
   //
   /* positionPaused - returns whether the given position is paused determining if a sound has 
